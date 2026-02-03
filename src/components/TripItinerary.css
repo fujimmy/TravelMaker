@@ -1,0 +1,348 @@
+.trip-itinerary {
+  animation: fadeIn 0.3s ease-in;
+}
+
+.itinerary-header {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-back {
+  background: none;
+  border: 2px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.btn-back:hover {
+  background-color: var(--bg-light);
+  border-color: var(--primary-color);
+}
+
+.trip-title {
+  flex: 1;
+  min-width: 200px;
+}
+
+.trip-title h2 {
+  font-size: 1.75rem;
+  color: var(--primary-color);
+  margin-bottom: 0.25rem;
+}
+
+.trip-title p {
+  color: var(--text-light);
+  font-size: 0.95rem;
+}
+
+.trip-summary {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.summary-label {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin-bottom: 0.25rem;
+}
+
+.summary-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--secondary-color);
+}
+
+.itinerary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.day-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--bg-light);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.day-info h3 {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  margin-bottom: 0.25rem;
+}
+
+.day-date {
+  color: var(--text-light);
+  font-size: 0.95rem;
+}
+
+.day-summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.day-cost {
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 1.1rem;
+}
+
+.btn-small {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 60px;
+  transition: background-color 0.2s ease;
+}
+
+.activities-list.dragging-over {
+  background-color: var(--bg-light);
+  border-radius: 8px;
+}
+
+.empty-activities {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-light);
+  background-color: var(--bg-light);
+  border-radius: 8px;
+  border: 2px dashed var(--border-color);
+}
+
+.activity-card {
+  background: var(--bg-light);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.activity-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow);
+}
+
+.activity-card.dragging {
+  opacity: 0.8;
+  box-shadow: var(--shadow-hover);
+  transform: rotate(2deg);
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.activity-time {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.time-icon {
+  font-size: 1.1rem;
+}
+
+.activity-category {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.activity-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.activity-location {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.location-icon {
+  font-size: 1.1rem;
+}
+
+.activity-content {
+  color: var(--text-dark);
+  line-height: 1.6;
+}
+
+.activity-notes {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.notes-icon {
+  flex-shrink: 0;
+}
+
+.activity-cost {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  margin-top: 0.5rem;
+}
+
+.cost-label {
+  color: var(--text-light);
+}
+
+.cost-value {
+  font-weight: 700;
+  color: var(--secondary-color);
+}
+
+.activity-actions {
+  display: flex;
+  gap: 1rem;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.btn-icon {
+  background: white;
+  border: 1px solid var(--border-color);
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+  min-width: 40px;
+  text-align: center;
+}
+
+.btn-icon:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .itinerary-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-back {
+    width: fit-content;
+  }
+
+  .trip-title {
+    text-align: center;
+  }
+
+  .trip-summary {
+    justify-content: center;
+  }
+
+  .day-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .day-summary {
+    justify-content: space-between;
+  }
+
+  .btn-small {
+    flex: 1;
+  }
+
+  .activity-actions {
+    position: static;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+  }
+}
+
+@media (max-width: 480px) {
+  .itinerary-header {
+    padding: 1.25rem;
+  }
+
+  .trip-title h2 {
+    font-size: 1.5rem;
+  }
+
+  .summary-value {
+    font-size: 1.25rem;
+  }
+
+  .day-section {
+    padding: 1.25rem;
+  }
+
+  .day-info h3 {
+    font-size: 1.25rem;
+  }
+
+  .activity-card {
+    padding: 1rem;
+  }
+
+  .day-summary {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
