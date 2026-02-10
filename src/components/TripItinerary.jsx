@@ -178,6 +178,15 @@ function TripItinerary({ trip, onUpdate, onBack }) {
                                     <div className="activity-location">
                                       <span className="location-icon">📍</span>
                                       <span>{activity.location}</span>
+                                      <a 
+                                        href={`https://www.google.com/maps/search/${encodeURIComponent(activity.location)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="maps-link-small"
+                                        title="在 Google Maps 中查看"
+                                      >
+                                        🗺️
+                                      </a>
                                     </div>
                                   )}
                                   

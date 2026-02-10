@@ -3,12 +3,13 @@
 }
 
 .form-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: var(--shadow);
+  background: var(--bg-card);
+  border-radius: 16px;
+  box-shadow: var(--shadow-hover);
   padding: 2rem;
   max-width: 800px;
   margin: 0 auto;
+  border: 1px solid var(--border-color);
 }
 
 .form-header {
@@ -84,6 +85,77 @@
   position: relative;
 }
 
+.input-hint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+/* Google Autocomplete 樣式覆蓋 */
+.pac-container {
+  border-radius: 8px;
+  border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-hover);
+  font-family: inherit;
+  margin-top: 4px;
+  z-index: 9999;
+}
+
+.pac-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.pac-item:first-child {
+  border-top: none;
+}
+
+.pac-item:hover {
+  background-color: var(--bg-light);
+}
+
+.pac-item-selected {
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
+.pac-icon {
+  margin-right: 0.5rem;
+}
+
+.pac-item-query {
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+.pac-matched {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.maps-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+}
+
+.maps-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
 .suggestions-dropdown {
   position: absolute;
   top: 100%;
@@ -100,9 +172,11 @@
 }
 
 .suggestion-item {
-  padding: 0.75rem;
+  padding: 0.75rem 1rem;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  color: var(--text-dark);
+  font-weight: 500;
 }
 
 .suggestion-item:hover {

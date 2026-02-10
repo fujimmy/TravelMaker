@@ -1,13 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import TimeInput from './TimeInput'
 import './ActivityForm.css'
 
 const CATEGORIES = ['交通', '住宿', '餐廳', '景點', '購物', '其他']
-
-const LOCATION_SUGGESTIONS = [
-  '機場', '飯店', '車站', '景點', '餐廳', '商店', '公園', '博物館', 
-  '神社', '寺廟', '海灘', '山', '湖', '城市', '商圈'
-]
 
 function ActivityForm({ activity, onSave, onCancel }) {
   const [formData, setFormData] = useState({
@@ -22,6 +17,9 @@ function ActivityForm({ activity, onSave, onCancel }) {
 
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState([])
+  const autocompleteServiceRef = useRef(null)
+  const placesServiceRef = useRef(null)
+  const locationInputRef = useRef(null)
 
   useEffect(() => {
     if (activity) {
@@ -29,23 +27,51 @@ function ActivityForm({ activity, onSave, onCancel }) {
     }
   }, [activity])
 
+  // Initialize Google Places Autocomplete
+  useEffect(() => {
+    if (window.google?.maps?.places?.AutocompleteService) {
+      autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService()
+      placesServiceRef.current = new window.google.maps.places.PlacesService(
+        document.createElement('div')
+      )
+    }
+  }, [])
+
   const handleLocationChange = (e) => {
     const value = e.target.value
     setFormData({ ...formData, location: value })
 
-    if (value.trim()) {
-      const filtered = LOCATION_SUGGESTIONS.filter(s => 
-        s.toLowerCase().includes(value.toLowerCase())
-      )
-      setFilteredSuggestions(filtered)
-      setShowSuggestions(filtered.length > 0)
+    if (value.trim().length > 1) {
+      if (autocompleteServiceRef.current) {
+        autocompleteServiceRef.current.getPlacePredictions(
+          {
+            input: value,
+            componentRestrictions: { country: ['tw', 'jp', 'us', 'sg', 'kr', 'th'] }
+          },
+          (predictions) => {
+            if (predictions) {
+              setFilteredSuggestions(predictions)
+              setShowSuggestions(true)
+            }
+          }
+        )
+      }
     } else {
       setShowSuggestions(false)
     }
   }
 
-  const handleSuggestionClick = (suggestion) => {
-    setFormData({ ...formData, location: suggestion })
+  const handleSuggestionClick = (prediction) => {
+    const mainText = prediction.main_text || prediction.description
+    let cleanedLocation = mainText
+
+    // Remove postal codes
+    cleanedLocation = cleanedLocation
+      .replace(/\s*\d{5}(?:-\d{4})?\s*$/, '') // US format
+      .replace(/\s*\d{3}-\d{4}\s*$/, '') // Japan format  
+      .replace(/\s*\d{2,5}\s*$/, '') // Taiwan format
+
+    setFormData({ ...formData, location: cleanedLocation.trim() })
     setShowSuggestions(false)
   }
 
@@ -117,6 +143,7 @@ function ActivityForm({ activity, onSave, onCancel }) {
           <div className="form-group location-group">
             <label htmlFor="location">地點</label>
             <input
+              ref={locationInputRef}
               type="text"
               id="location"
               value={formData.location}
@@ -133,10 +160,23 @@ function ActivityForm({ activity, onSave, onCancel }) {
                     className="suggestion-item"
                     onClick={() => handleSuggestionClick(suggestion)}
                   >
-                    {suggestion}
+                    <span className="main-text">{suggestion.main_text}</span>
+                    {suggestion.secondary_text && (
+                      <span className="secondary-text">{suggestion.secondary_text}</span>
+                    )}
                   </div>
                 ))}
               </div>
+            )}
+            {formData.location && !showSuggestions && (
+              <a 
+                href={`https://www.google.com/maps/search/${encodeURIComponent(formData.location)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="maps-link"
+              >
+                🗺️ 在 Google Maps 中查看
+              </a>
             )}
           </div>
 

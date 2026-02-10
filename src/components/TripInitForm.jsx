@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './TripInitForm.css'
 
 const LOCATION_SUGGESTIONS = {
@@ -24,6 +24,71 @@ function TripInitForm({ onSubmit, onCancel }) {
 
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [suggestions, setSuggestions] = useState([])
+  const locationInputRef = useRef(null)
+  const autocompleteRef = useRef(null)
+
+  // 初始化 Google Places Autocomplete (新版 API)
+  useEffect(() => {
+    if (!locationInputRef.current) return
+
+    const initAutocomplete = () => {
+      if (window.google && window.google.maps && window.google.maps.places) {
+        try {
+          // 使用新版 Places Autocomplete API
+          const autocompleteService = new window.google.maps.places.AutocompleteService()
+          
+          autocompleteRef.current = new window.google.maps.places.Autocomplete(
+            locationInputRef.current,
+            {
+              componentRestrictions: { country: ['tw', 'jp', 'kr', 'th', 'fr', 'gb', 'us'] },
+              types: [],  // 不限制類型，允許搜尋任何地點（包括餐廳、景點、夜市等）
+              fields: ['geometry', 'formatted_address', 'name', 'place_id']
+            }
+          )
+
+          autocompleteRef.current.addListener('place_changed', () => {
+            const place = autocompleteRef.current.getPlace()
+            if (place && (place.name || place.formatted_address)) {
+              // 優先使用地點名稱，避免包含郵遞區號
+              // 如果沒有 name，使用 formatted_address 但移除郵遞區號
+              let locationName = place.name
+              
+              if (!locationName && place.formatted_address) {
+                // 移除郵遞區號（通常在最後，格式如 " 郵遞區號" 或 ", 郵編"）
+                locationName = place.formatted_address
+                  .replace(/[\s,]*\d{3,}-?\d{2,}[\s]*$/g, '') // 移除台灣郵遞區號
+                  .replace(/[\s,]*\d{5}[\s]*$/g, '') // 移除美國郵編
+                  .replace(/[\s,]*\d{4}[\s]*$/g, '') // 移除日本郵編
+                  .trim()
+              }
+              
+              setFormData(prev => ({ 
+                ...prev, 
+                location: locationName 
+              }))
+            }
+          })
+        } catch (error) {
+          console.warn('Places Autocomplete initialization warning:', error)
+          // 降級至基礎輸入功能
+        }
+      }
+    }
+
+    // 如果 Google Maps API 還沒載入，等待載入
+    if (!window.google) {
+      const checkGoogle = setInterval(() => {
+        if (window.google && window.google.maps && window.google.maps.places) {
+          clearInterval(checkGoogle)
+          initAutocomplete()
+        }
+      }, 100)
+
+      return () => clearInterval(checkGoogle)
+    } else {
+      initAutocomplete()
+    }
+  }, [])
 
   const handleLocationChange = (e) => {
     const value = e.target.value
@@ -47,6 +112,25 @@ function TripInitForm({ onSubmit, onCancel }) {
   const handleSuggestionClick = (suggestion) => {
     setFormData({ ...formData, location: suggestion })
     setShowSuggestions(false)
+  }
+
+  const handleStartDateChange = (e) => {
+    const startDate = e.target.value
+    let endDate = formData.endDate
+
+    // 如果選了開始日期，且結束日期未設定或早於開始日期，自動設為開始日期+1天
+    if (startDate) {
+      const start = new Date(startDate)
+      const nextDay = new Date(start)
+      nextDay.setDate(nextDay.getDate() + 1)
+      const nextDayStr = nextDay.toISOString().split('T')[0]
+
+      if (!endDate || endDate < startDate) {
+        endDate = nextDayStr
+      }
+    }
+
+    setFormData({ ...formData, startDate, endDate })
   }
 
   const handleParticipantCountChange = (e) => {
@@ -112,7 +196,7 @@ function TripInitForm({ onSubmit, onCancel }) {
                   type="date"
                   id="startDate"
                   value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  onChange={handleStartDateChange}
                   required
                 />
               </div>
@@ -123,6 +207,8 @@ function TripInitForm({ onSubmit, onCancel }) {
                   id="endDate"
                   value={formData.endDate}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  min={formData.startDate || undefined}
+                  disabled={!formData.startDate}
                   required
                 />
               </div>
@@ -134,13 +220,14 @@ function TripInitForm({ onSubmit, onCancel }) {
             <div className="form-group location-group">
               <label htmlFor="location">地點</label>
               <input
+                ref={locationInputRef}
                 type="text"
                 id="location"
                 value={formData.location}
                 onChange={handleLocationChange}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                onFocus={() => formData.location && setSuggestions(suggestions) && setShowSuggestions(suggestions.length > 0)}
-                placeholder="例如：沖繩、東京、首爾..."
+                onFocus={() => formData.location && setShowSuggestions(suggestions.length > 0)}
+                placeholder="例如：沖繩、東京、首爾... (支援 Google 地點搜尋)"
                 required
               />
               {showSuggestions && suggestions.length > 0 && (
@@ -155,6 +242,17 @@ function TripInitForm({ onSubmit, onCancel }) {
                     </div>
                   ))}
                 </div>
+              )}
+              <small className="input-hint">💡 輸入地點名稱，系統會自動顯示 Google Maps 建議</small>
+              {formData.location && !showSuggestions && (
+                <a 
+                  href={`https://www.google.com/maps/search/${encodeURIComponent(formData.location)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="maps-link"
+                >
+                  🗺️ 在 Google Maps 中查看
+                </a>
               )}
             </div>
           </div>

@@ -5,10 +5,10 @@
 }
 
 .app-header {
-  background: linear-gradient(135deg, var(--primary-color) 0%, #357ABD 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 50%, #7C3AED 100%);
   color: white;
   padding: 2rem 0;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-lg);
 }
 
 .app-header h1 {

@@ -3,15 +3,16 @@
 }
 
 .itinerary-header {
-  background: white;
-  border-radius: 12px;
+  background: var(--bg-card);
+  border-radius: 16px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-hover);
   display: flex;
   align-items: center;
   gap: 1.5rem;
   flex-wrap: wrap;
+  border: 1px solid var(--border-color);
 }
 
 .btn-back {
@@ -76,10 +77,11 @@
   gap: 2rem;
 }
 
-.day-section {
-  background: white;
-  border-radius: 12px;
+.day-section {var(--bg-card);
+  border-radius: 16px;
   padding: 1.5rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color
   box-shadow: var(--shadow);
 }
 
@@ -185,12 +187,13 @@
   font-size: 1.1rem;
 }
 
-.activity-category {
-  background-color: var(--primary-color);
+.activity-ca: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white;
-  padding: 0.25rem 0.75rem;
+  padding: 0.35rem 0.85rem;
   border-radius: 20px;
   font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2)em;
   font-weight: 600;
 }
 
@@ -206,6 +209,23 @@
   gap: 0.5rem;
   color: var(--text-dark);
   font-weight: 500;
+}
+
+.maps-link-small {
+  margin-left: auto;
+  padding: 0.4rem 0.6rem;
+  font-size: 1rem;
+  text-decoration: none;
+  border-radius: 6px;
+  background: var(--bg-card);
+  transition: all 0.2s ease;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.maps-link-small:hover {
+  background: var(--primary-color);
+  transform: scale(1.1);
 }
 
 .location-icon {
