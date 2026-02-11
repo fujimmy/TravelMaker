@@ -14,63 +14,58 @@ function TimeInput({ value, onChange, min, disabled, label, required }) {
   }, [value])
 
   const handleHourChange = (e) => {
-    let h = e.target.value
-    if (h && (parseInt(h) < 0 || parseInt(h) > 23)) {
-      return
-    }
+    const h = e.target.value
     setHour(h)
-    updateTime(h, minute)
+    if (h && minute) {
+      onChange(`${h}:${minute}`)
+    }
   }
 
   const handleMinuteChange = (e) => {
-    let m = e.target.value
-    if (m && (parseInt(m) < 0 || parseInt(m) > 59)) {
-      return
-    }
+    const m = e.target.value
     setMinute(m)
-    updateTime(hour, m)
-  }
-
-  const updateTime = (h, m) => {
-    if (h && m) {
-      const hStr = String(h).padStart(2, '0')
-      const mStr = String(m).padStart(2, '0')
-      onChange(`${hStr}:${mStr}`)
+    if (hour && m) {
+      onChange(`${hour}:${m}`)
     }
   }
 
-  const isDisabled = disabled || !hour || !minute
+  // Generate hour and minute options
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'))
 
   return (
     <div className="time-input-group">
       <label>{label}</label>
-      <div className="time-input-wrapper">
-        <div className="time-input-field">
-          <input
-            type="number"
-            min="0"
-            max="23"
-            placeholder="00"
-            value={hour}
-            onChange={handleHourChange}
-            disabled={disabled}
-            className="hour-input"
-          />
-          <span className="time-separator">:</span>
-          <input
-            type="number"
-            min="0"
-            max="59"
-            placeholder="00"
-            value={minute}
-            onChange={handleMinuteChange}
-            disabled={disabled || !hour}
-            className="minute-input"
-          />
-        </div>
-        {value && <span className="time-display">{value}</span>}
+      <div className="time-select-container">
+        <select
+          value={hour}
+          onChange={handleHourChange}
+          disabled={disabled}
+          className="time-select hour-select"
+          required={required}
+        >
+          <option value="">小時</option>
+          {hours.map(h => (
+            <option key={h} value={h}>{h}</option>
+          ))}
+        </select>
+        <span className="time-separator">:</span>
+        <select
+          value={minute}
+          onChange={handleMinuteChange}
+          disabled={disabled || !hour}
+          className="time-select minute-select"
+          required={required}
+        >
+          <option value="">分鐘</option>
+          {minutes.map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
+        {hour && minute && (
+          <span className="time-display">{hour}:{minute}</span>
+        )}
       </div>
-      <span className="time-hint">24小時制 (00-23):(00-59)</span>
     </div>
   )
 }

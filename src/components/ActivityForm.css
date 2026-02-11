@@ -11,6 +11,7 @@
   z-index: 1000;
   padding: 1rem;
   animation: fadeIn 0.2s ease-in;
+  overflow-y: auto;
 }
 
 .modal-content {
@@ -19,10 +20,11 @@
   box-shadow: var(--shadow-lg);
   max-width: 600px;
   width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: auto;
+  overflow-y: visible;
   animation: slideUp 0.3s ease-out;
   border: 1px solid var(--border-color);
+  margin: auto;
 }
 
 @keyframes slideUp {
@@ -157,23 +159,33 @@ textarea:disabled {
 /* Responsive Design */
 @media (max-width: 768px) {
   .modal-overlay {
-    padding: 0;
+    padding: 0.5rem;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 1rem;
   }
 
   .modal-content {
     max-width: 100%;
-    max-height: 100vh;
-    border-radius: 0;
+    border-radius: 16px;
+    margin: 0 auto;
+    max-height: none;
+    overflow-y: visible;
   }
 
   .form-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
   }
 }
 
 @media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0.25rem;
+  }
+
   .modal-header {
-    padding: 1.25rem;
+    padding: 1rem;
   }
 
   .modal-header h3 {
@@ -181,6 +193,11 @@ textarea:disabled {
   }
 
   .modal-content form {
-    padding: 1.25rem;
+    padding: 1rem;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
   }
 }
