@@ -131,6 +131,22 @@ function TripItinerary({ trip, onUpdate, onBack }) {
       setAILoading(true)
       setAIError(null)
       
+      // 计算旅游天数
+      const dayCount = dateRange.length
+      
+      // 如果超过 10 天，显示警告
+      if (dayCount > 10) {
+        const confirmed = window.confirm(
+          `您的行程共 ${dayCount} 天，生成的内容可能较长。\n\n建议：\n- 10 天以内效果最佳\n- 超过 10 天可能需要多次生成\n\n是否继续生成？`
+        )
+        if (!confirmed) {
+          setAILoading(false)
+          return
+        }
+      }
+      
+      console.log('[TripItinerary] Generating AI suggestions for:', trip.location)
+      
       // 收集现有活动作为参考
       const existingActivities = []
       Object.entries(trip.itinerary).forEach(([date, activities]) => {
@@ -147,14 +163,16 @@ function TripItinerary({ trip, onUpdate, onBack }) {
         true // 使用缓存
       )
       
+      console.log('[TripItinerary] Received AI suggestions:', result.itinerary)
+      console.log('[TripItinerary] Setting aiSuggestions and showing modal')
+      
       setAISuggestions(result.itinerary)
+      setShowAISuggestions(true)
       
       // 如果是从缓存获取，显示提示信息
       if (result.fromCache) {
         setAIError('📦 这是之前为此地点生成的行程建议（已缓存）')
       }
-      
-      setShowAISuggestions(true)
     } catch (error) {
       console.error('Error generating AI suggestions:', error)
       setAIError(error.message || '生成行程建议失败，请稍后重试')

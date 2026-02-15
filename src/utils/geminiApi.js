@@ -1,8 +1,9 @@
 // Google Gemini API 配置
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-1.5-flash'
+const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta'
 const CACHE_KEY_PREFIX = 'gemini_itinerary_cache_'
-const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days
+const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days
 
 // 生成缓存 key
 function getCacheKey(location, startDate, endDate) {
@@ -96,6 +97,40 @@ export function clearAllCacheItineraries() {
   keys.forEach(key => localStorage.removeItem(key))
 }
 
+function normalizeModelName(modelName) {
+  if (!modelName) return ''
+  return modelName.startsWith('models/') ? modelName : `models/${modelName}`
+}
+
+function buildGenerateUrl(modelName) {
+  const normalized = normalizeModelName(modelName)
+  return `${GEMINI_BASE_URL}/${normalized}:generateContent?key=${GEMINI_API_KEY}`
+}
+
+async function listModels() {
+  const url = `${GEMINI_BASE_URL}/models?key=${GEMINI_API_KEY}`
+  const response = await fetch(url)
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(`Gemini API error: ${error.error?.message || 'Failed to list models'}`)
+  }
+  const data = await response.json()
+  return data.models || []
+}
+
+function pickFirstGenerateModel(models) {
+  const supported = models.filter(model => (model.supportedGenerationMethods || []).includes('generateContent'))
+  return supported[0]?.name || ''
+}
+
+function tryParse(text) {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
+}
+
 export async function generateItineraryWithAI(location, startDate, endDate, existingActivities = [], useCache = true) {
   // 尝试从缓存获取
   if (useCache) {
@@ -116,70 +151,72 @@ export async function generateItineraryWithAI(location, startDate, endDate, exis
   const end = new Date(endDate)
   const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1
 
-  // 现有活动摘要
+  // 如果旅游天数超过 7 天，提示用户
+  if (days > 10) {
+    console.warn('[Gemini API] Long trip detected, may exceed token limit')
+  }
+
+  // 现有活动摘要（限制长度）
   const existingActivitiesSummary = existingActivities.length > 0
-    ? `已有活动：${existingActivities.map(a => `${a.startTime}-${a.endTime} ${a.category} ${a.content}`).join('；')}`
+    ? `已有活动：${existingActivities.slice(0, 3).map(a => `${a.category}`).join('、')}等${existingActivities.length}个活动`
     : '还没有添加任何活动'
 
-  const prompt = `你是一个专业的旅游规划师。请为以下旅行生成详细的每日行程建议：
+  const prompt = `你是专业旅游规划师。为以下旅行生成精简的每日行程建议：
 
 地点: ${location}
-旅游日期: ${startDate} 至 ${endDate}（共${days}天）
+日期: ${startDate} 至 ${endDate}（${days}天）
 ${existingActivitiesSummary}
 
-请按照以下格式为每一天生成3-4个活动建议：
-- 每个活动需要包括：开始时间、结束时间、行程分类、活动名称、活动描述、预估费用
+要求：
+1. 每天生成3-4个活动
+2. content字段：简洁描述（30字内）
+3. notes字段：简短提示（20字内）或可省略
+4. 活动时间不重叠，合理安排8-10小时
+5. 包含不同类型（景點、餐廳、交通等）
 
-返回格式为JSON数组，每个对象包含：
-{
-  "dayIndex": 1,
-  "date": "2025-01-15",
-  "activities": [
-    {
-      "startTime": "09:00",
-      "endTime": "11:00",
-      "category": "景點",
-      "content": "活动名称和描述",
-      "cost": 1000,
-      "location": "具体地点",
-      "notes": "其他备注"
-    }
-  ]
-}
+返回JSON数组格式：
+[
+  {
+    "dayIndex": 1,
+    "date": "2025-01-15",
+    "activities": [
+      {
+        "startTime": "09:00",
+        "endTime": "11:00",
+        "category": "景點",
+        "content": "简洁活动描述",
+        "cost": 1000,
+        "location": "地点名称",
+        "notes": "简短提示"
+      }
+    ]
+  }
+]
 
-请确保：
-1. 活动时间合理且不重叠
-2. 包含不同类型的活动（景點、餐廳、交通等）
-3. 每天安排8-10小时的旅游时间
-4. 费用估计符合当地消费水平
-5. 考虑地点间的交通时间
-6. 只返回JSON数组，不要有其他说明文字`
+只返回JSON，无其他文字。`
+
+  console.log('[Gemini API] Starting AI itinerary generation for:', { location, startDate, endDate, days })
 
   try {
-    const response = await fetch(GEMINI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 4096,
-        }
-      }),
-      params: {
-        key: GEMINI_API_KEY
-      }
-    })
+    let modelToUse = GEMINI_MODEL
 
-    // 使用 URLSearchParams 来添加 API key 到 URL
-    const urlWithKey = `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`
-    const response2 = await fetch(urlWithKey, {
+    const models = await listModels()
+    const supportedModels = models.filter(model => (model.supportedGenerationMethods || []).includes('generateContent'))
+    if (supportedModels.length === 0) {
+      throw new Error('Gemini API error: No models available for generateContent. Please verify your API key and enabled services in Google AI Studio.')
+    }
+
+    const hasPreferred = supportedModels.some(model => model.name === normalizeModelName(GEMINI_MODEL))
+    if (!hasPreferred) {
+      const fallback = pickFirstGenerateModel(models)
+      if (fallback) {
+        modelToUse = fallback.replace('models/', '')
+      }
+    }
+
+    let urlWithKey = buildGenerateUrl(modelToUse)
+
+    let response = await fetch(urlWithKey, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -192,33 +229,233 @@ ${existingActivitiesSummary}
         }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 16384,
+          responseMimeType: 'application/json'
         }
       })
     })
 
-    if (!response2.ok) {
-      const error = await response2.json()
-      throw new Error(`Gemini API error: ${error.error?.message || 'Unknown error'}`)
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      const message = error.error?.message || 'Unknown error'
+
+      if (message.includes('not found') || message.includes('not supported')) {
+        const models = await listModels()
+        const fallback = pickFirstGenerateModel(models)
+        if (!fallback) {
+          throw new Error('Gemini API error: No available models support generateContent. Please check your API key and enabled services.')
+        }
+        modelToUse = fallback
+        urlWithKey = buildGenerateUrl(modelToUse)
+        response = await fetch(urlWithKey, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 16384,
+              responseMimeType: 'application/json'
+            }
+          })
+        })
+
+        if (!response.ok) {
+          const fallbackError = await response.json().catch(() => ({}))
+          throw new Error(`Gemini API error: ${fallbackError.error?.message || 'Unknown error'}`)
+        }
+      } else {
+        throw new Error(`Gemini API error: ${message}`)
+      }
     }
 
-    const data = await response2.json()
+    const data = await response.json()
     const content = data.candidates?.[0]?.content?.parts?.[0]?.text
 
     if (!content) {
       throw new Error('No content in Gemini response')
     }
 
-    // 解析 JSON 响应
-    const jsonMatch = content.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) {
-      throw new Error('Invalid response format from Gemini')
+    console.log('[Gemini API] Response received, content length:', content.length)
+
+    let itinerary
+
+    // 首先尝试直接解析
+    let parsed = tryParse(content)
+    if (parsed) {
+      console.log('[Gemini API] Direct parse successful')
     }
 
-    const itinerary = JSON.parse(jsonMatch[0])
+    // 如果直接解析失败，尝试提取代码块
+    if (!parsed) {
+      const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+      if (fenceMatch?.[1]) {
+        parsed = tryParse(fenceMatch[1])
+      }
+    }
+
+    // 如果仍然失败，尝试找到第一个 [ 或 { 并智能提取 JSON
+    if (!parsed) {
+      const startIdx = content.search(/[\[\{]/)
+      if (startIdx !== -1) {
+        let extracted = ''
+        let bracketCount = 0
+        let braceCount = 0
+        let inString = false
+        let escaped = false
+        let started = false
+        
+        for (let i = startIdx; i < content.length; i++) {
+          const char = content[i]
+          
+          if (escaped) {
+            extracted += char
+            escaped = false
+            continue
+          }
+          
+          if (char === '\\' && inString) {
+            extracted += char
+            escaped = true
+            continue
+          }
+          
+          if (char === '"' && !escaped) {
+            inString = !inString
+            extracted += char
+            continue
+          }
+          
+          if (!inString) {
+            if (char === '[') {
+              bracketCount++
+              started = true
+            } else if (char === ']') {
+              bracketCount--
+            } else if (char === '{') {
+              braceCount++
+              started = true
+            } else if (char === '}') {
+              braceCount--
+            }
+          }
+          
+          extracted += char
+          
+          // 检查是否完成了一个 JSON 结构
+          if (started && bracketCount === 0 && braceCount === 0 && extracted.length > 2) {
+            break
+          }
+        }
+        
+        console.log('[Gemini API] Extracted JSON length:', extracted.length, 'brackets:', bracketCount, 'braces:', braceCount)
+        
+        if (extracted && extracted.length > 2) {
+          // 首先尝试直接解析
+          parsed = tryParse(extracted)
+          
+          // 如果失败且有未闭合的括号或花括号，尝试修复
+          if (!parsed && (bracketCount > 0 || braceCount > 0 || inString)) {
+            console.log('[Gemini API] Attempting to repair incomplete JSON')
+            let repaired = extracted
+            
+            // 如果在字符串中被截断，闭合字符串
+            if (inString) {
+              repaired += '"'
+            }
+            
+            // 闭合未完成的对象和数组
+            if (braceCount > 0) {
+              repaired += '}'.repeat(braceCount)
+            }
+            if (bracketCount > 0) {
+              repaired += ']'.repeat(bracketCount)
+            }
+            
+            console.log('[Gemini API] Repaired JSON length:', repaired.length)
+            parsed = tryParse(repaired)
+            
+            if (parsed) {
+              console.log('[Gemini API] Successfully repaired JSON')
+            }
+          }
+        }
+      }
+    }
+
+    // 现在确定 itinerary
+    if (Array.isArray(parsed)) {
+      itinerary = parsed
+      console.log('[Gemini API] Parsed as direct array, items count:', itinerary.length)
+    } else if (parsed?.itinerary && Array.isArray(parsed.itinerary)) {
+      itinerary = parsed.itinerary
+      console.log('[Gemini API] Parsed from .itinerary property')
+    } else if (parsed?.data && Array.isArray(parsed.data)) {
+      itinerary = parsed.data
+      console.log('[Gemini API] Parsed from .data property')
+    } else if (parsed?.days && Array.isArray(parsed.days)) {
+      itinerary = parsed.days
+      console.log('[Gemini API] Parsed from .days property')
+    } else {
+      // 如果解析失败，输出调试信息
+      console.error('Failed to parse Gemini response:', {
+        rawContentFirst1000: content.slice(0, 1000),
+        rawContentLast200: content.slice(-200),
+        parsed,
+        contentLength: content.length,
+        isArray: Array.isArray(parsed),
+        type: typeof parsed
+      })
+      throw new Error(`Invalid response format from Gemini. Raw response: ${content.slice(0, 300)}`)
+    }
+
+    // 规范化：如果返回的是活动数组而不是按天分组
+    const looksLikeActivity = (item) => item && (item.startTime || item.time) && item.endTime && (item.category || item.type)
+    const isActivityArray = itinerary.length > 0 && itinerary.every(looksLikeActivity)
+    if (isActivityArray) {
+      itinerary = [
+        {
+          dayIndex: 1,
+          date: startDate,
+          activities: itinerary
+        }
+      ]
+    }
+
+    // 规范化：确保每个 day 有 activities 数组
+    itinerary = itinerary
+      .map((day, index) => {
+        if (Array.isArray(day?.activities)) {
+          return day
+        }
+        if (Array.isArray(day?.items)) {
+          return { ...day, activities: day.items }
+        }
+        // 如果 day 本身就是 activity 格式，转换为 day 格式
+        if (day?.startTime || day?.time) {
+          return {
+            dayIndex: 1,
+            date: startDate,
+            activities: [day]
+          }
+        }
+        return {
+          dayIndex: day?.dayIndex ?? index + 1,
+          date: day?.date ?? startDate,
+          activities: Array.isArray(day) ? day : []
+        }
+      })
     
     // 保存到缓存
     saveCacheItinerary(location, startDate, endDate, itinerary)
+    
+    console.log('[Gemini API] Successfully generated itinerary with', itinerary.length, 'day(s), returning to component')
     
     return {
       itinerary,

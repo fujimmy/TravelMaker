@@ -14,7 +14,7 @@ dist-ssr
 
 # API keys and sensitive files
 index.html
-
+.env
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -25,3 +25,5 @@ index.html
 *.njsproj
 *.sln
 *.sw?
+
+

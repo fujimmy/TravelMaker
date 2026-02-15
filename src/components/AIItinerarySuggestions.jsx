@@ -1,9 +1,17 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import './AIItinerarySuggestions.css'
 
 function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = false }) {
   const [selectedActivities, setSelectedActivities] = useState(new Set())
   const [expandedDays, setExpandedDays] = useState(new Set([0]))
+
+  useEffect(() => {
+    console.log('[AIItinerarySuggestions] Component loaded with suggestions:', suggestions)
+    if (Array.isArray(suggestions) && suggestions.length > 0) {
+      console.log('[AIItinerarySuggestions] Expanding first day')
+      setExpandedDays(new Set([0]))
+    }
+  }, [suggestions])
 
   const toggleDayExpand = (dayIndex) => {
     const newExpanded = new Set(expandedDays)
@@ -31,7 +39,8 @@ function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = 
     if (!day) return
 
     const newSelected = new Set(selectedActivities)
-    const dayActivityKeys = day.activities.map((_, idx) => `${dayIndex}-${idx}`)
+    const activities = Array.isArray(day.activities) ? day.activities : []
+    const dayActivityKeys = activities.map((_, idx) => `${dayIndex}-${idx}`)
     const allSelected = dayActivityKeys.every(key => newSelected.has(key))
 
     dayActivityKeys.forEach(key => {
@@ -47,7 +56,8 @@ function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = 
   const handleAddSelected = () => {
     const activitiesToAdd = []
     suggestions.forEach((dayPlan, dayIndex) => {
-      dayPlan.activities.forEach((activity, activityIndex) => {
+      const activities = Array.isArray(dayPlan.activities) ? dayPlan.activities : []
+      activities.forEach((activity, activityIndex) => {
         const key = `${dayIndex}-${activityIndex}`
         if (selectedActivities.has(key)) {
           activitiesToAdd.push({
@@ -63,7 +73,8 @@ function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = 
   const getTotalCost = () => {
     let total = 0
     suggestions.forEach((dayPlan, dayIndex) => {
-      dayPlan.activities.forEach((activity, activityIndex) => {
+      const activities = Array.isArray(dayPlan.activities) ? dayPlan.activities : []
+      activities.forEach((activity, activityIndex) => {
         const key = `${dayIndex}-${activityIndex}`
         if (selectedActivities.has(key)) {
           total += activity.cost || 0
@@ -87,87 +98,104 @@ function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = 
             <div className="spinner"></div>
             <p>正在生成行程建议...</p>
           </div>
+        ) : !suggestions || !Array.isArray(suggestions) || suggestions.length === 0 ? (
+          <div className="error-state">
+            <p>⚠️ 无法加载行程建议</p>
+            <p style={{fontSize: '12px', color: '#999', marginTop: '10px'}}>
+              suggestions: {suggestions ? '存在' : '不存在'}, 
+              是数组: {Array.isArray(suggestions) ? '是' : '否'},
+              长度: {Array.isArray(suggestions) ? suggestions.length : '不适用'}
+            </p>
+          </div>
         ) : (
           <>
             <div className="suggestions-list">
-              {suggestions.map((dayPlan, dayIndex) => (
-                <div key={dayIndex} className="day-plan-section">
-                  <div 
-                    className="day-plan-header"
-                    onClick={() => toggleDayExpand(dayIndex)}
-                  >
-                    <div className="day-plan-title">
-                      <span className="day-number">Day {dayIndex + 1}</span>
-                      <span className="day-date">{dayPlan.date}</span>
-                      <span className="activity-count">{dayPlan.activities.length} 个活动</span>
+              {suggestions.map((dayPlan, dayIndex) => {
+                console.log('[AIItinerarySuggestions] Rendering day', dayIndex + 1, dayPlan)
+                const activities = Array.isArray(dayPlan.activities) ? dayPlan.activities : []
+                return (
+                  <div key={dayIndex} className="day-plan-section">
+                    <div 
+                      className="day-plan-header"
+                      onClick={() => toggleDayExpand(dayIndex)}
+                    >
+                      <div className="day-plan-title">
+                        <span className="day-number">Day {dayIndex + 1}</span>
+                        <span className="day-date">{dayPlan.date}</span>
+                        <span className="activity-count">{activities.length} 个活动</span>
+                      </div>
+                      <div className="day-plan-actions">
+                        <label className="checkbox-container">
+                          <input
+                            type="checkbox"
+                            checked={activities.length > 0 && activities.every((_, idx) => 
+                              selectedActivities.has(`${dayIndex}-${idx}`)
+                            )}
+                            onChange={() => toggleSelectAllDay(dayIndex)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span>全选</span>
+                        </label>
+                        <span className="expand-icon">
+                          {expandedDays.has(dayIndex) ? '▼' : '▶'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="day-plan-actions">
-                      <label className="checkbox-container">
-                        <input
-                          type="checkbox"
-                          checked={dayPlan.activities.every((_, idx) => 
-                            selectedActivities.has(`${dayIndex}-${idx}`)
-                          )}
-                          onChange={() => toggleSelectAllDay(dayIndex)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <span>全选</span>
-                      </label>
-                      <span className="expand-icon">
-                        {expandedDays.has(dayIndex) ? '▼' : '▶'}
-                      </span>
-                    </div>
+
+                    {expandedDays.has(dayIndex) && (
+                      <div className="activities-container">
+                        {activities.length === 0 ? (
+                          <div className="empty-activities">暂无推荐活动</div>
+                        ) : (
+                          activities.map((activity, activityIndex) => {
+                            const key = `${dayIndex}-${activityIndex}`
+                            const isSelected = selectedActivities.has(key)
+
+                            return (
+                              <div 
+                                key={activityIndex}
+                                className={`suggestion-activity ${isSelected ? 'selected' : ''}`}
+                              >
+                                <label className="activity-checkbox">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleActivitySelection(dayIndex, activityIndex)}
+                                  />
+                                </label>
+
+                                <div className="activity-details">
+                                  <div className="activity-header-info">
+                                    <span className="time">{activity.startTime} - {activity.endTime}</span>
+                                    <span className="category">{activity.category}</span>
+                                  </div>
+                                  <h4 className="activity-title">{activity.content}</h4>
+                                  {activity.location && (
+                                    <div className="activity-location">
+                                      <span className="location-icon">📍</span>
+                                      <span>{activity.location}</span>
+                                    </div>
+                                  )}
+                                  {activity.notes && (
+                                    <div className="activity-notes">
+                                      <span className="notes-icon">📝</span>
+                                      <span>{activity.notes}</span>
+                                    </div>
+                                  )}
+                                  <div className="activity-cost">
+                                    <span className="cost-label">预估费用：</span>
+                                    <span className="cost-value">NT$ {(activity.cost || 0).toLocaleString()}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  {expandedDays.has(dayIndex) && (
-                    <div className="activities-container">
-                      {dayPlan.activities.map((activity, activityIndex) => {
-                        const key = `${dayIndex}-${activityIndex}`
-                        const isSelected = selectedActivities.has(key)
-
-                        return (
-                          <div 
-                            key={activityIndex}
-                            className={`suggestion-activity ${isSelected ? 'selected' : ''}`}
-                          >
-                            <label className="activity-checkbox">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => toggleActivitySelection(dayIndex, activityIndex)}
-                              />
-                            </label>
-
-                            <div className="activity-details">
-                              <div className="activity-header-info">
-                                <span className="time">{activity.startTime} - {activity.endTime}</span>
-                                <span className="category">{activity.category}</span>
-                              </div>
-                              <h4 className="activity-title">{activity.content}</h4>
-                              {activity.location && (
-                                <div className="activity-location">
-                                  <span className="location-icon">📍</span>
-                                  <span>{activity.location}</span>
-                                </div>
-                              )}
-                              {activity.notes && (
-                                <div className="activity-notes">
-                                  <span className="notes-icon">📝</span>
-                                  <span>{activity.notes}</span>
-                                </div>
-                              )}
-                              <div className="activity-cost">
-                                <span className="cost-label">预估费用：</span>
-                                <span className="cost-value">NT$ {(activity.cost || 0).toLocaleString()}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             <div className="suggestions-footer">
