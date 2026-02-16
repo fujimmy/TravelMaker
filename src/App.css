@@ -5,46 +5,78 @@
 }
 
 .app-header {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 50%, #7C3AED 100%);
+  background: linear-gradient(120deg, #0EA5E9 0%, var(--primary-color) 40%, #22D3EE 100%);
   color: white;
-  padding: 2rem 0;
+  padding: 3.25rem 0 3rem;
   box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.app-header::before {
+  content: '';
+  position: absolute;
+  inset: -140px 10% auto 10%;
+  height: 260px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.4), transparent 70%);
+  opacity: 0.8;
+}
+
+.app-header::after {
+  content: '';
+  position: absolute;
+  top: -90px;
+  right: -140px;
+  width: 360px;
+  height: 360px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.25), transparent 68%);
+}
+
+.app-header .container {
+  position: relative;
+  z-index: 1;
 }
 
 .app-header h1 {
-  font-size: 2.5rem;
+  font-size: 3rem;
   margin-bottom: 0.5rem;
   font-weight: 700;
+  letter-spacing: -0.02em;
+  text-shadow: 0 18px 30px rgba(15, 23, 42, 0.25);
 }
 
 .app-header p {
-  font-size: 1.1rem;
-  opacity: 0.9;
+  font-size: 1.15rem;
+  opacity: 0.92;
+  max-width: 520px;
 }
 
 .app-main {
   flex: 1;
-  padding: 2rem 0;
+  padding: 3rem 0 3.5rem;
 }
 
 .app-footer {
-  background-color: var(--text-dark);
-  color: white;
+  background: linear-gradient(120deg, rgba(15, 23, 42, 0.96), rgba(30, 64, 175, 0.9));
+  color: rgba(255, 255, 255, 0.85);
   padding: 1.5rem 0;
   text-align: center;
   margin-top: auto;
+  backdrop-filter: blur(10px);
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1rem;
+  position: relative;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
   .app-header h1 {
-    font-size: 2rem;
+    font-size: 2.3rem;
   }
 
   .app-header p {
@@ -52,7 +84,7 @@
   }
 
   .app-main {
-    padding: 1rem 0;
+    padding: 2rem 0;
   }
 
   .container {

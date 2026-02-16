@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { useState, useEffect } from 'react'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { format, eachDayOfInterval, parseISO } from 'date-fns'
 import ActivityForm from './ActivityForm'
 import AIItinerarySuggestions from './AIItinerarySuggestions'
@@ -18,6 +18,25 @@ function TripItinerary({ trip, onUpdate, onBack }) {
   const [aiLoading, setAILoading] = useState(false)
   const [aiError, setAIError] = useState(null)
   const [hasCachedData, setHasCachedData] = useState(false)
+
+  const createActivityId = () => `act_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+
+  useEffect(() => {
+    let needsUpdate = false
+    const updatedItinerary = {}
+
+    Object.entries(trip.itinerary || {}).forEach(([dateKey, activities]) => {
+      updatedItinerary[dateKey] = (activities || []).map(activity => {
+        if (activity?.id) return activity
+        needsUpdate = true
+        return { ...activity, id: createActivityId() }
+      })
+    })
+
+    if (needsUpdate) {
+      onUpdate({ ...trip, itinerary: updatedItinerary })
+    }
+  }, [trip, onUpdate])
 
   // Generate date range
   const dateRange = eachDayOfInterval({
@@ -48,6 +67,10 @@ function TripItinerary({ trip, onUpdate, onBack }) {
 
   const handleSaveActivity = (activityData) => {
     const updatedItinerary = { ...trip.itinerary }
+    const activityWithId = {
+      ...activityData,
+      id: activityData.id || editingActivity?.id || createActivityId()
+    }
     
     if (!updatedItinerary[selectedDate]) {
       updatedItinerary[selectedDate] = []
@@ -55,10 +78,10 @@ function TripItinerary({ trip, onUpdate, onBack }) {
 
     if (editingActivity !== null) {
       // Edit existing activity
-      updatedItinerary[selectedDate][editingActivity.index] = activityData
+      updatedItinerary[selectedDate][editingActivity.index] = activityWithId
     } else {
       // Add new activity
-      updatedItinerary[selectedDate].push(activityData)
+      updatedItinerary[selectedDate].push(activityWithId)
     }
 
     onUpdate({ ...trip, itinerary: updatedItinerary })
@@ -84,9 +107,26 @@ function TripItinerary({ trip, onUpdate, onBack }) {
     if (!result.destination) return
 
     const dateStr = format(date, 'yyyy-MM-dd')
-    const activities = Array.from(trip.itinerary[dateStr] || [])
-    const [removed] = activities.splice(result.source.index, 1)
-    activities.splice(result.destination.index, 0, removed)
+    const originalActivities = trip.itinerary[dateStr] || []
+    const activities = originalActivities.map(activity => ({ ...activity }))
+    const timeSlots = originalActivities.map(activity => ({
+      startTime: activity.startTime,
+      endTime: activity.endTime
+    }))
+    const sourceIndex = result.source.index
+    const destinationIndex = result.destination.index
+
+    if (sourceIndex === destinationIndex) return
+
+    const [removed] = activities.splice(sourceIndex, 1)
+    activities.splice(destinationIndex, 0, removed)
+
+    activities.forEach((activity, index) => {
+      const slot = timeSlots[index]
+      if (!slot) return
+      activity.startTime = slot.startTime
+      activity.endTime = slot.endTime
+    })
 
     const updatedItinerary = { ...trip.itinerary }
     updatedItinerary[dateStr] = activities
@@ -216,7 +256,10 @@ function TripItinerary({ trip, onUpdate, onBack }) {
       if (!updatedItinerary[date]) {
         updatedItinerary[date] = []
       }
-      updatedItinerary[date].push(activity)
+      updatedItinerary[date].push({
+        ...activity,
+        id: activity.id || createActivityId()
+      })
     })
 
     onUpdate({ ...trip, itinerary: updatedItinerary })
@@ -355,8 +398,8 @@ function TripItinerary({ trip, onUpdate, onBack }) {
                   ) : (
                     getActivitiesForDate(currentDate).map((activity, activityIndex) => (
                       <Draggable
-                        key={`${currentDateStr}-${activityIndex}`}
-                        draggableId={`${currentDateStr}-${activityIndex}`}
+                        key={activity.id || `${currentDateStr}-${activityIndex}`}
+                        draggableId={activity.id || `${currentDateStr}-${activityIndex}`}
                         index={activityIndex}
                       >
                         {(provided, snapshot) => (
@@ -371,16 +414,11 @@ function TripItinerary({ trip, onUpdate, onBack }) {
                                 <span className="time-icon">🕐</span>
                                 <span>{activity.startTime} - {activity.endTime}</span>
                               </div>
-                              <div className="activity-category">
-                                {activity.category}
-                              </div>
-                            </div>
-
-                            <div className="activity-body">
-                              {activity.location && (
-                                <div className="activity-location">
-                                  <span className="location-icon">📍</span>
-                                  <span>{activity.location}</span>
+                              <div className="activity-header-right">
+                                <div className="activity-category">
+                                  {activity.category}
+                                </div>
+                                {activity.location && (
                                   <a 
                                     href={`https://www.google.com/maps/search/${encodeURIComponent(activity.location)}`}
                                     target="_blank"
@@ -390,6 +428,15 @@ function TripItinerary({ trip, onUpdate, onBack }) {
                                   >
                                     🗺️
                                   </a>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="activity-body">
+                              {activity.location && (
+                                <div className="activity-location">
+                                  <span className="location-icon">📍</span>
+                                  <span>{activity.location}</span>
                                 </div>
                               )}
                               

@@ -4,7 +4,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: radial-gradient(circle at 20% 10%, rgba(29, 78, 216, 0.25), transparent 55%),
+    rgba(15, 23, 42, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12,19 +13,21 @@
   padding: 1rem;
   animation: fadeIn 0.2s ease-in;
   overflow-y: auto;
+  backdrop-filter: blur(6px);
 }
 
 .modal-content {
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: 20px;
   box-shadow: var(--shadow-lg);
   max-width: 600px;
   width: 100%;
   max-height: auto;
   overflow-y: visible;
   animation: slideUp 0.3s ease-out;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--glass-highlight);
   margin: auto;
+  backdrop-filter: blur(18px);
 }
 
 @keyframes slideUp {
@@ -43,7 +46,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 2px solid var(--bg-light);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 .modal-header h3 {
@@ -88,14 +91,14 @@
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
+  background: rgba(255, 255, 255, 0.96);
   border: 1px solid var(--border-color);
   border-top: none;
   border-radius: 0 0 8px 8px;
   max-height: 200px;
   overflow-y: auto;
   z-index: 999;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .suggestion-item {
@@ -106,7 +109,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  background: white;
+  background: transparent;
 }
 
 .suggestion-item:hover {
@@ -133,25 +136,25 @@
   display: inline-block;
   margin-top: 0.75rem;
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #22D3EE 100%);
   color: white;
   text-decoration: none;
-  border-radius: 6px;
+  border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 600;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 12px 18px -14px rgba(14, 116, 144, 0.7);
 }
 
 .maps-link:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 18px 26px -16px rgba(14, 116, 144, 0.8);
 }
 
 input:disabled,
 select:disabled,
 textarea:disabled {
-  background-color: var(--bg-light);
+  background-color: rgba(226, 232, 240, 0.6);
   cursor: not-allowed;
   opacity: 0.6;
 }

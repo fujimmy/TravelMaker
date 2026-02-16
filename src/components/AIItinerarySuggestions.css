@@ -4,7 +4,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: radial-gradient(circle at 20% 10%, rgba(29, 78, 216, 0.25), transparent 55%),
+    rgba(15, 23, 42, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12,11 +13,12 @@
   padding: 1rem;
   animation: fadeIn 0.2s ease-in;
   overflow-y: auto;
+  backdrop-filter: blur(6px);
 }
 
 .ai-suggestions-content {
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: 22px;
   box-shadow: var(--shadow-lg);
   max-width: 900px;
   width: 100%;
@@ -24,13 +26,14 @@
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease-out;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--glass-highlight);
   margin: auto;
+  backdrop-filter: blur(18px);
 }
 
 .ai-suggestions-header {
   padding: 1.5rem;
-  border-bottom: 2px solid var(--bg-light);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
   background: var(--bg-card);
   display: flex;
   align-items: flex-start;
@@ -42,7 +45,7 @@
 
 .ai-suggestions-header h2 {
   font-size: 1.5rem;
-  color: var(--primary-color);
+  color: var(--primary-dark);
   margin: 0 0 0.25rem 0;
 }
 
@@ -123,12 +126,12 @@
 }
 
 .suggestions-list::-webkit-scrollbar-track {
-  background: var(--bg-light);
+  background: rgba(226, 232, 240, 0.6);
   border-radius: 4px;
 }
 
 .suggestions-list::-webkit-scrollbar-thumb {
-  background: var(--border-color);
+  background: rgba(148, 163, 184, 0.6);
   border-radius: 4px;
 }
 
@@ -137,18 +140,19 @@
 }
 
 .day-plan-section {
-  border: 2px solid var(--border-color);
-  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 16px;
   overflow: visible;
-  background: var(--bg-light);
+  background: rgba(255, 255, 255, 0.7);
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow);
 }
 
 .day-plan-header {
   padding: 1rem;
-  background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
-  border-bottom: 2px solid var(--border-color);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(239, 246, 255, 0.6) 100%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -160,7 +164,7 @@
 }
 
 .day-plan-header:hover {
-  background: linear-gradient(135deg, rgba(74, 144, 226, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.85) 0%, rgba(224, 231, 255, 0.65) 100%);
 }
 
 .day-plan-title {
@@ -183,7 +187,7 @@
 }
 
 .activity-count {
-  background: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color), #22D3EE);
   color: white;
   padding: 0.2rem 0.6rem;
   border-radius: 12px;
@@ -230,9 +234,9 @@
 
 .activities-container .empty-activities {
   padding: 1rem;
-  background: white;
-  border: 1px dashed var(--border-color);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  border-radius: 12px;
   color: var(--text-light);
   text-align: center;
   font-size: 0.9rem;
@@ -242,20 +246,20 @@
   display: flex;
   gap: 1rem;
   padding: 1rem;
-  background: white;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 14px;
   transition: all 0.2s ease;
 }
 
 .suggestion-activity:hover {
-  border-color: var(--primary-color);
+  border-color: rgba(37, 99, 235, 0.6);
   box-shadow: var(--shadow);
 }
 
 .suggestion-activity.selected {
-  border-color: var(--primary-color);
-  background: linear-gradient(135deg, rgba(74, 144, 226, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%);
+  border-color: rgba(37, 99, 235, 0.7);
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.85) 0%, rgba(224, 231, 255, 0.6) 100%);
 }
 
 .activity-checkbox {

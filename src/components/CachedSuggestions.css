@@ -4,7 +4,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: radial-gradient(circle at 20% 10%, rgba(29, 78, 216, 0.25), transparent 55%),
+    rgba(15, 23, 42, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12,26 +13,28 @@
   padding: 1rem;
   animation: fadeIn 0.2s ease-in;
   overflow-y: auto;
+  backdrop-filter: blur(6px);
 }
 
 .cached-suggestions-content {
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: 22px;
   box-shadow: var(--shadow-lg);
   max-width: 600px;
   width: 100%;
   max-height: 70vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease-out;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--glass-highlight);
   display: flex;
   flex-direction: column;
   margin: auto;
+  backdrop-filter: blur(18px);
 }
 
 .cached-suggestions-header {
   padding: 1.5rem;
-  border-bottom: 2px solid var(--bg-light);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
   position: sticky;
   top: 0;
   background: var(--bg-card);
@@ -43,7 +46,7 @@
 
 .cached-suggestions-header h2 {
   font-size: 1.5rem;
-  color: var(--primary-color);
+  color: var(--primary-dark);
   margin: 0 0 0.25rem 0;
 }
 
@@ -105,16 +108,16 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: var(--bg-light);
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .cached-item:hover {
-  border-color: var(--primary-color);
-  background: white;
+  border-color: rgba(37, 99, 235, 0.6);
+  background: rgba(255, 255, 255, 0.95);
   box-shadow: var(--shadow);
   transform: translateX(4px);
 }
@@ -139,7 +142,7 @@
 .location-name {
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--primary-color);
+  color: var(--primary-dark);
 }
 
 .cached-dates {
@@ -160,10 +163,10 @@
 }
 
 .btn-delete {
-  background: white;
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.35);
   padding: 0.6rem 0.75rem;
-  border-radius: 6px;
+  border-radius: 10px;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -179,7 +182,7 @@
 
 .cached-footer {
   padding: 1.5rem;
-  border-top: 2px solid var(--bg-light);
+  border-top: 1px solid rgba(148, 163, 184, 0.3);
   background: var(--bg-card);
   position: sticky;
   bottom: 0;
@@ -190,7 +193,7 @@
 .btn {
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -198,9 +201,9 @@
 }
 
 .btn-secondary {
-  background: white;
+  background: rgba(255, 255, 255, 0.85);
   color: var(--text-dark);
-  border: 2px solid var(--border-color);
+  border: 1px solid rgba(148, 163, 184, 0.35);
 }
 
 .btn-secondary:hover {

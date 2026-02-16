@@ -19,9 +19,9 @@
 
 .time-select {
   padding: 0.75rem;
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
-  background-color: white;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.9);
   font-size: 0.95rem;
   font-weight: 500;
   color: var(--text-dark);
@@ -41,15 +41,15 @@
 
 .time-select:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+  border-color: rgba(37, 99, 235, 0.7);
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
 }
 
 .time-select:disabled {
-  background-color: var(--bg-light);
+  background-color: rgba(226, 232, 240, 0.7);
   color: var(--text-light);
   cursor: not-allowed;
-  border-color: var(--border-color);
+  border-color: rgba(148, 163, 184, 0.4);
 }
 
 .time-separator {
@@ -60,13 +60,13 @@
 }
 
 .time-display {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #22D3EE 100%);
   color: white;
   padding: 0.5rem 1rem;
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 600;
   font-size: 1.1rem;
-  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 12px 18px -14px rgba(14, 116, 144, 0.7);
   white-space: nowrap;
   order: 10;
   width: 100%;

@@ -24,12 +24,13 @@
 .trip-list-header h2 {
   font-size: 2rem;
   color: var(--text-dark);
+  letter-spacing: -0.02em;
 }
 
 .btn {
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 14px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -37,26 +38,29 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  backdrop-filter: blur(8px);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #22D3EE 100%);
   color: white;
+  box-shadow: 0 12px 20px -14px rgba(14, 116, 144, 0.7);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--primary-dark) 0%, #4338CA 100%);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-hover);
+  background: linear-gradient(135deg, var(--primary-dark) 0%, #0EA5E9 100%);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 18px 30px -16px rgba(14, 116, 144, 0.8);
 }
 
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: 20px;
   box-shadow: var(--shadow);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--glass-highlight);
+  backdrop-filter: blur(14px);
 }
 
 .empty-icon {
@@ -83,19 +87,37 @@
 
 .trip-card {
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 1.5rem;
   box-shadow: var(--shadow);
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--glass-highlight);
+  backdrop-filter: blur(16px);
+  position: relative;
+  overflow: hidden;
+}
+
+.trip-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.35), transparent 40%);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.4s ease;
+  transform: translateX(-10%);
 }
 
 .trip-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-hover);
-  border-color: var(--primary-light);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(124, 58, 237, 0.03) 100%);
+  border-color: rgba(96, 165, 250, 0.6);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(239, 246, 255, 0.78) 100%);
+}
+
+.trip-card:hover::before {
+  opacity: 1;
+  transform: translateX(8%);
 }
 
 .trip-card-header {
@@ -108,7 +130,7 @@
 
 .trip-card-header h3 {
   font-size: 1.5rem;
-  color: var(--primary-color);
+  color: var(--primary-dark);
   margin: 0;
   flex: 1;
 }
@@ -119,7 +141,7 @@
   font-size: 1.25rem;
   cursor: pointer;
   padding: 0.25rem;
-  opacity: 0.6;
+  opacity: 0.7;
   transition: all 0.2s ease;
   flex-shrink: 0;
 }
@@ -155,12 +177,12 @@
 }
 
 .participant-tag {
-  background-color: var(--bg-light);
+  background-color: rgba(226, 232, 240, 0.7);
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.85rem;
   color: var(--text-dark);
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 /* Responsive Design */
