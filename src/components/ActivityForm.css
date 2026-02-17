@@ -82,38 +82,78 @@
   margin-bottom: 1rem;
 }
 
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: white;
+  color: #000;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.1);
+  background: white;
+}
+
 .location-group {
   position: relative;
+  margin-bottom: 1.5rem;
 }
 
 .suggestions-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid var(--border-color);
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  max-height: 200px;
+  background: white;
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  min-height: 40px;
+  max-height: 280px;
   overflow-y: auto;
-  z-index: 999;
-  box-shadow: var(--shadow);
+  z-index: 2000;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2), 0 6px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 4px;
 }
 
 .suggestion-item {
-  padding: 0.75rem 1rem;
+  padding: 1rem;
   cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #e5e5e5;
   transition: background-color 0.2s ease;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  background: transparent;
+  gap: 0.35rem;
+  background: white;
+  line-height: 1.5;
 }
 
 .suggestion-item:hover {
-  background-color: #f5f5f5;
+  background-color: #f0f9ff;
+  border-left: 4px solid var(--primary-color);
+  padding-left: calc(1rem - 4px);
 }
 
 .suggestion-item:last-child {
@@ -121,15 +161,18 @@
 }
 
 .suggestion-item .main-text {
-  font-weight: 600;
-  color: #1a1a1a;
+  font-weight: 700;
+  color: #000000;
   display: block;
+  font-size: 1rem;
+  letter-spacing: 0.3px;
 }
 
 .suggestion-item .secondary-text {
-  font-size: 0.85rem;
-  color: #666666;
+  font-size: 0.9rem;
+  color: #444444;
   display: block;
+  font-weight: 400;
 }
 
 .maps-link {

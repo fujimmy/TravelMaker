@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react'
+import { getLocalCurrency, getExchangeRate, formatCostWithExchangeRate, getCurrencyInfo } from '../utils/currencyUtils'
 import './AIItinerarySuggestions.css'
 
 function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = false }) {
   const [selectedActivities, setSelectedActivities] = useState(new Set())
   const [expandedDays, setExpandedDays] = useState(new Set([0]))
+  const [localCurrency, setLocalCurrency] = useState({ code: 'TWD', symbol: 'NT$', name: '台幣' })
+  const [exchangeRate, setExchangeRate] = useState(1)
+  const [rateLoading, setRateLoading] = useState(true)
 
   useEffect(() => {
     console.log('[AIItinerarySuggestions] Component loaded with suggestions:', suggestions)
@@ -12,6 +16,54 @@ function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = 
       setExpandedDays(new Set([0]))
     }
   }, [suggestions])
+
+  // 獲取當地貨幣和匯率
+  useEffect(() => {
+    async function fetchCurrencyInfo() {
+      if (!suggestions || !Array.isArray(suggestions) || suggestions.length === 0) return
+      
+      // 優先使用 AI 回傳的完整貨幣資訊
+      const firstDay = suggestions[0]
+      let currency
+      
+      if (firstDay?.currency_symbol && firstDay?.currency_name) {
+        // AI 已經提供了完整的貨幣資訊（包含符號和名稱）
+        currency = {
+          code: firstDay.local_currency || 'TWD',
+          symbol: firstDay.currency_symbol,
+          name: firstDay.currency_name
+        }
+        console.log('[AIItinerarySuggestions] Using AI-provided full currency info:', currency)
+      } else if (firstDay?.local_currency) {
+        // AI 只提供了貨幣代碼，需要查詢符號
+        currency = getCurrencyInfo(firstDay.local_currency)
+        console.log('[AIItinerarySuggestions] Using AI currency code with lookup:', currency)
+      } else {
+        // 備用方案：從地點判斷
+        currency = trip?.location ? getLocalCurrency(trip.location) : { code: 'TWD', symbol: 'NT$', name: '台幣' }
+        console.log('[AIItinerarySuggestions] Using location-based currency:', currency)
+      }
+      
+      setLocalCurrency(currency)
+      
+      if (currency.code !== 'TWD') {
+        setRateLoading(true)
+        try {
+          const rate = await getExchangeRate(currency.code, 'TWD')
+          setExchangeRate(rate)
+        } catch (error) {
+          console.error('Failed to fetch exchange rate:', error)
+        } finally {
+          setRateLoading(false)
+        }
+      } else {
+        setExchangeRate(1)
+        setRateLoading(false)
+      }
+    }
+    
+    fetchCurrencyInfo()
+  }, [suggestions, trip?.location])
 
   const toggleDayExpand = (dayIndex) => {
     const newExpanded = new Set(expandedDays)
@@ -71,17 +123,18 @@ function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = 
   }
 
   const getTotalCost = () => {
-    let total = 0
+    let totalLocal = 0
     suggestions.forEach((dayPlan, dayIndex) => {
       const activities = Array.isArray(dayPlan.activities) ? dayPlan.activities : []
       activities.forEach((activity, activityIndex) => {
         const key = `${dayIndex}-${activityIndex}`
         if (selectedActivities.has(key)) {
-          total += activity.cost || 0
+          totalLocal += activity.cost || 0
         }
       })
     })
-    return total
+    const totalTWD = Math.round(totalLocal * exchangeRate)
+    return { totalLocal, totalTWD }
   }
 
   return (
@@ -184,7 +237,12 @@ function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = 
                                   )}
                                   <div className="activity-cost">
                                     <span className="cost-label">预估费用：</span>
-                                    <span className="cost-value">NT$ {(activity.cost || 0).toLocaleString()}</span>
+                                    <div className="cost-values">
+                                      <span className="cost-value-local">{localCurrency.symbol}{(activity.cost || 0).toLocaleString()}</span>
+                                      {localCurrency.code !== 'TWD' && !rateLoading && (
+                                        <span className="cost-value-twd">≈ NT$ {Math.round((activity.cost || 0) * exchangeRate).toLocaleString()}</span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -200,8 +258,18 @@ function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = 
 
             <div className="suggestions-footer">
               <div className="cost-summary">
-                <span>已选择费用总计：</span>
-                <span className="total-cost">NT$ {getTotalCost().toLocaleString()}</span>
+                <div className="cost-summary-header">
+                  <span>已选择费用总计：</span>
+                  {localCurrency.code !== 'TWD' && !rateLoading && (
+                    <span className="exchange-rate-info">匯率: 1 {localCurrency.code} ≈ {exchangeRate.toFixed(2)} TWD</span>
+                  )}
+                </div>
+                <div className="total-costs">
+                  <span className="total-cost-local">{localCurrency.symbol}{getTotalCost().totalLocal.toLocaleString()}</span>
+                  {localCurrency.code !== 'TWD' && !rateLoading && (
+                    <span className="total-cost-twd">≈ NT$ {getTotalCost().totalTWD.toLocaleString()}</span>
+                  )}
+                </div>
               </div>
               <div className="footer-actions">
                 <button 

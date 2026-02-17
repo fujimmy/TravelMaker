@@ -46,7 +46,7 @@ function ActivityForm({ activity, onSave, onCancel }) {
         autocompleteServiceRef.current.getPlacePredictions(
           {
             input: value,
-            componentRestrictions: { country: ['tw', 'jp', 'us', 'sg', 'kr', 'th'] }
+            // 移除國家限制，允許搜尋全球地點
           },
           (predictions) => {
             if (predictions) {

@@ -40,9 +40,8 @@ function TripInitForm({ onSubmit, onCancel }) {
           autocompleteRef.current = new window.google.maps.places.Autocomplete(
             locationInputRef.current,
             {
-              componentRestrictions: { country: ['tw', 'jp', 'kr', 'th', 'fr', 'gb', 'us'] },
-              types: [],  // 不限制類型，允許搜尋任何地點（包括餐廳、景點、夜市等）
-              fields: ['geometry', 'formatted_address', 'name', 'place_id']
+              types: ['(cities)'],  // 限制為城市，提高搜尋品質
+              fields: ['geometry', 'formatted_address', 'name', 'place_id', 'address_components']
             }
           )
 

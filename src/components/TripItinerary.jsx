@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { format, eachDayOfInterval, parseISO } from 'date-fns'
 import ActivityForm from './ActivityForm'
 import AIItinerarySuggestions from './AIItinerarySuggestions'
 import CachedSuggestions from './CachedSuggestions'
 import { generateItineraryWithAI, getCachedItineraries } from '../utils/geminiApi'
+import { saveLocationImage, loadLocationImage } from '../utils/localStorage'
+import { getLocalCurrency, getExchangeRate, getCurrencyInfo } from '../utils/currencyUtils'
 import './TripItinerary.css'
 
 function TripItinerary({ trip, onUpdate, onBack }) {
@@ -18,8 +20,60 @@ function TripItinerary({ trip, onUpdate, onBack }) {
   const [aiLoading, setAILoading] = useState(false)
   const [aiError, setAIError] = useState(null)
   const [hasCachedData, setHasCachedData] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [uploadMessage, setUploadMessage] = useState('')
+  const [locationImage, setLocationImage] = useState(null)
+  const [localCurrency, setLocalCurrency] = useState({ code: 'TWD', symbol: 'NT$', name: '台幣' })
+  const [exchangeRate, setExchangeRate] = useState(1)
+  const fileInputRef = useRef(null)
 
   const createActivityId = () => `act_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+
+  // Load location image from localStorage
+  useEffect(() => {
+    const savedImage = loadLocationImage(trip.location)
+    if (savedImage) {
+      setLocationImage(savedImage)
+    }
+  }, [trip.location])
+
+  // 獲取並設置當地貨幣和匯率
+  useEffect(() => {
+    async function fetchCurrencyInfo() {
+      let currency
+      
+      // 優先使用 trip 中保存的貨幣資訊（從 AI 建議加入時保存）
+      if (trip.currency_symbol && trip.currency_name) {
+        currency = {
+          code: trip.local_currency || 'TWD',
+          symbol: trip.currency_symbol,
+          name: trip.currency_name
+        }
+      } else if (trip.local_currency) {
+        currency = getCurrencyInfo(trip.local_currency)
+      } else {
+        // 備用：從地點判斷
+        currency = getLocalCurrency(trip.location)
+      }
+      
+      setLocalCurrency(currency)
+      
+      // 獲取匯率
+      if (currency.code !== 'TWD') {
+        try {
+          const rate = await getExchangeRate(currency.code, 'TWD')
+          setExchangeRate(rate)
+        } catch (error) {
+          console.error('Failed to fetch exchange rate:', error)
+          setExchangeRate(1)
+        }
+      } else {
+        setExchangeRate(1)
+      }
+    }
+    
+    fetchCurrencyInfo()
+  }, [trip.location, trip.local_currency, trip.currency_symbol, trip.currency_name])
 
   useEffect(() => {
     let needsUpdate = false
@@ -262,25 +316,172 @@ function TripItinerary({ trip, onUpdate, onBack }) {
       })
     })
 
-    onUpdate({ ...trip, itinerary: updatedItinerary })
+    // 從 AI suggestions 中提取貨幣資訊並保存到 trip
+    const firstSuggestion = aiSuggestions[0]
+    const updatedTrip = { ...trip, itinerary: updatedItinerary }
+    
+    if (firstSuggestion?.currency_symbol && firstSuggestion?.currency_name) {
+      updatedTrip.local_currency = firstSuggestion.local_currency
+      updatedTrip.currency_symbol = firstSuggestion.currency_symbol
+      updatedTrip.currency_name = firstSuggestion.currency_name
+      updatedTrip.location_emoji = firstSuggestion.location_emoji
+    }
+
+    onUpdate(updatedTrip)
     setShowAISuggestions(false)
     setAISuggestions([])
   }
 
+  const getLocationEmoji = (location) => {
+    if (!location) return '📍'
+    
+    const loc = location.toLowerCase()
+    
+    // 使用簡單的關鍵字匹配，而不是維護龐大的映射表
+    // 國家標誌
+    if (loc.includes('日本') || loc.includes('japan')) return '🇯🇵'
+    if (loc.includes('韓') || loc.includes('korea')) return '🇰🇷'
+    if (loc.includes('泰') || loc.includes('thailand')) return '🇹🇭'
+    if (loc.includes('台灣') || loc.includes('taiwan')) return '🇹🇼'
+    if (loc.includes('香港') || loc.includes('hong kong')) return '🇭🇰'
+    if (loc.includes('新加坡') || loc.includes('singapore')) return '🇸🇬'
+    if (loc.includes('美國') || loc.includes('usa') || loc.includes('america')) return '🇺🇸'
+    if (loc.includes('法') || loc.includes('france')) return '🇫🇷'
+    if (loc.includes('德') || loc.includes('germany')) return '🇩🇪'
+    if (loc.includes('義') || loc.includes('italy')) return '🇮🇹'
+    if (loc.includes('西班牙') || loc.includes('spain')) return '🇪🇸'
+    if (loc.includes('英') || loc.includes('uk') || loc.includes('britain')) return '🇬🇧'
+    if (loc.includes('荷蘭') || loc.includes('netherlands')) return '🇳🇱'
+    if (loc.includes('瑞士') || loc.includes('switzerland')) return '🇨🇭'
+    if (loc.includes('澳') || loc.includes('australia')) return '🇦🇺'
+    if (loc.includes('加拿大') || loc.includes('canada')) return '🇨🇦'
+    
+    // 知名城市
+    if (loc.includes('東京') || loc.includes('tokyo')) return '🗼'
+    if (loc.includes('巴黎') || loc.includes('paris')) return '🗼'
+    if (loc.includes('倫敦') || loc.includes('london')) return '🏰'
+    if (loc.includes('紐約') || loc.includes('new york')) return '🗽'
+    if (loc.includes('阿姆斯特丹') || loc.includes('amsterdam')) return '🌷'
+    if (loc.includes('羅馬') || loc.includes('rome')) return '🏛️'
+    if (loc.includes('威尼斯') || loc.includes('venice')) return '🚤'
+    if (loc.includes('雪梨') || loc.includes('sydney')) return '🌉'
+    if (loc.includes('杜拜') || loc.includes('dubai')) return '🏗️'
+    if (loc.includes('首爾') || loc.includes('seoul')) return '🌆'
+    if (loc.includes('曼谷') || loc.includes('bangkok')) return '🕌'
+    
+    // 預設
+    return '📍'
+  }
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      handleUploadImage(file)
+    }
+  }
+
+  const handleUploadImage = (file) => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('請選擇圖片檔案')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('檔案大小不能超過 5MB')
+      return
+    }
+
+    setIsUploadingImage(true)
+    const reader = new FileReader()
+
+    reader.onload = (event) => {
+      const base64String = event.target?.result
+      if (base64String && typeof base64String === 'string') {
+        // Save to localStorage
+        saveLocationImage(trip.location, base64String)
+        setLocationImage(base64String)
+        setIsUploadingImage(false)
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+        // Show success message
+        setUploadMessage('✅ 圖片上傳成功')
+        setTimeout(() => {
+          setUploadMessage('')
+        }, 3000)
+        console.log('圖片已上傳')
+      }
+    }
+
+    reader.onerror = () => {
+      alert('圖片上傳失敗，請重試')
+      setIsUploadingImage(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+
+    reader.readAsDataURL(file)
+  }
+
   return (
     <div className="trip-itinerary">
+      <div 
+        className="itinerary-banner"
+        style={locationImage ? {
+          backgroundImage: `linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.4) 100%), url('${locationImage}')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        } : {}}
+      >
+        <span className="banner-location">{getLocationEmoji(trip.location)} {trip.location}</span>
+        <span className="banner-daterange">{trip.startDate} ~ {trip.endDate}</span>
+        <button
+          className="btn-upload-banner"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploadingImage}
+          title="上傳地點圖片"
+        >
+          {isUploadingImage ? '上傳中...' : '📷'}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
+        />
+      </div>
+
+      {uploadMessage && (
+        <div className="upload-message">
+          {uploadMessage}
+        </div>
+      )}
+
       <div className="itinerary-header">
         <button className="btn-back" onClick={onBack}>
           ← 返回
         </button>
-        <div className="trip-title">
-          <h2>{trip.location}</h2>
-          <p>{trip.startDate} ~ {trip.endDate}</p>
-        </div>
-        <div className="trip-summary">
+        <div className="trip-summary" style={{ marginLeft: 'auto' }}>
           <div className="summary-item">
             <span className="summary-label">總預算</span>
-            <span className="summary-value">NT$ {getTotalCost().toLocaleString()}</span>
+            <span className="summary-value">
+              {localCurrency.code !== 'TWD' ? (
+                <>
+                  <span className="amount-primary">{localCurrency.symbol}{getTotalCost().toLocaleString()}</span>
+                  <span className="amount-divider"> / </span>
+                  <span className="amount-secondary">NT$ {Math.round(getTotalCost() * exchangeRate).toLocaleString()}</span>
+                </>
+              ) : (
+                <span className="amount-primary">{localCurrency.symbol}{getTotalCost().toLocaleString()}</span>
+              )}
+            </span>
           </div>
         </div>
       </div>
@@ -291,13 +492,19 @@ function TripItinerary({ trip, onUpdate, onBack }) {
           {Object.entries(categoryBreakdown).sort((a, b) => b[1] - a[1]).map(([category, cost]) => (
             <div key={category} className="breakdown-card">
               <div className="card-category">{category}</div>
-              <div className="card-cost">NT$ {cost.toLocaleString()}</div>
+              <div className="card-cost">
+                {localCurrency.code !== 'TWD' ? (
+                  <>
+                    <span className="amount-primary">{localCurrency.symbol}{cost.toLocaleString()}</span>
+                    <span className="amount-divider"> / </span>
+                    <span className="amount-secondary">NT$ {Math.round(cost * exchangeRate).toLocaleString()}</span>
+                  </>
+                ) : (
+                  <span className="amount-primary">{localCurrency.symbol}{cost.toLocaleString()}</span>
+                )}
+              </div>
             </div>
           ))}
-          <div className="breakdown-card total">
-            <div className="card-category">合計</div>
-            <div className="card-cost">NT$ {getTotalCost().toLocaleString()}</div>
-          </div>
         </div>
       </div>
 
@@ -373,7 +580,17 @@ function TripItinerary({ trip, onUpdate, onBack }) {
             <div className="day-info">
               <h3>Day {currentDayIndex + 1}</h3>
               <span className="day-date">{format(currentDate, 'yyyy/MM/dd (EEEE)')}</span>
-              <span className="day-cost-header">💰 NT$ {getTotalCostForDate(currentDate).toLocaleString()}</span>
+              <span className="day-cost-header">
+                💰 {localCurrency.code !== 'TWD' ? (
+                  <>
+                    <span className="amount-primary">{localCurrency.symbol}{getTotalCostForDate(currentDate).toLocaleString()}</span>
+                    <span className="amount-divider"> / </span>
+                    <span className="amount-secondary">NT$ {Math.round(getTotalCostForDate(currentDate) * exchangeRate).toLocaleString()}</span>
+                  </>
+                ) : (
+                  <span className="amount-primary">{localCurrency.symbol}{getTotalCostForDate(currentDate).toLocaleString()}</span>
+                )}
+              </span>
             </div>
             <button 
               className="btn btn-primary"
@@ -453,7 +670,15 @@ function TripItinerary({ trip, onUpdate, onBack }) {
 
                               <div className="activity-cost">
                                 <span className="cost-label">費用：</span>
-                                <span className="cost-value">NT$ {parseFloat(activity.cost || 0).toLocaleString()}</span>
+                                {localCurrency.code !== 'TWD' ? (
+                                  <span className="cost-value">
+                                    <span className="amount-primary">{localCurrency.symbol}{parseFloat(activity.cost || 0).toLocaleString()}</span>
+                                    <span className="amount-divider"> / </span>
+                                    <span className="amount-secondary">NT$ {Math.round(parseFloat(activity.cost || 0) * exchangeRate).toLocaleString()}</span>
+                                  </span>
+                                ) : (
+                                  <span className="cost-value">{localCurrency.symbol}{parseFloat(activity.cost || 0).toLocaleString()}</span>
+                                )}
                               </div>
                             </div>
 
@@ -513,6 +738,14 @@ function TripItinerary({ trip, onUpdate, onBack }) {
           onCancel={() => setShowCachedSuggestions(false)}
         />
       )}
+
+      <button 
+        className="floating-add-activity-btn"
+        onClick={() => handleAddActivity(currentDate)}
+        title="新增活動"
+      >
+        + 新增活動
+      </button>
     </div>
   )
 }

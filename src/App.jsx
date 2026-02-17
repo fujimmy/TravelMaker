@@ -56,12 +56,14 @@ function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="container">
-          <h1>🌍 TravelMaker</h1>
-          <p>專屬於你的旅遊規劃助手</p>
-        </div>
-      </header>
+      {view === 'list' && (
+        <header className="app-header">
+          <div className="container">
+            <h1>🌍 TravelMaker</h1>
+            <p>專屬於你的旅遊規劃助手</p>
+          </div>
+        </header>
+      )}
 
       <main className="app-main">
         <div className="container">

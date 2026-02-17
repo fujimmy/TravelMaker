@@ -173,12 +173,22 @@ ${existingActivitiesSummary}
 3. notes字段：简短提示（20字内）或可省略
 4. 活动时间不重叠，合理安排8-10小时
 5. 包含不同类型（景點、餐廳、交通等）
+6. 花費請以當地貨幣表示，數字部分不帶貨幣符號
+7. 必須填寫以下欄位：
+   - local_currency: 當地貨幣代碼（如 JPY, USD, EUR, TWD 等）
+   - currency_symbol: 貨幣符號（如 ¥, $, €, NT$ 等）
+   - currency_name: 貨幣中文名稱（如 日圓, 美元, 歐元, 台幣 等）
+   - location_emoji: 代表該地點的單一 emoji（如東京用🗼、巴黎用🗼、阿姆斯特丹用🌷）
 
 返回JSON数组格式：
 [
   {
     "dayIndex": 1,
     "date": "2025-01-15",
+    "local_currency": "JPY",
+    "currency_symbol": "¥",
+    "currency_name": "日圓",
+    "location_emoji": "🗼",
     "activities": [
       {
         "startTime": "09:00",
