@@ -114,10 +114,10 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 1.5rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.9rem;
   min-height: 0;
 }
 
@@ -141,7 +141,7 @@
 
 .day-plan-section {
   border: 1px solid rgba(148, 163, 184, 0.35);
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: visible;
   background: rgba(255, 255, 255, 0.7);
   display: flex;
@@ -150,7 +150,7 @@
 }
 
 .day-plan-header {
-  padding: 1rem;
+  padding: 0.75rem 0.875rem;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(239, 246, 255, 0.6) 100%);
   border-bottom: 1px solid rgba(148, 163, 184, 0.3);
   display: flex;
@@ -159,8 +159,8 @@
   align-items: center;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  gap: 0.5rem;
-  min-height: 60px;
+  gap: 0.35rem;
+  min-height: 48px;
 }
 
 .day-plan-header:hover {
@@ -170,51 +170,51 @@
 .day-plan-title {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.6rem;
   flex: 1;
 }
 
 .day-number {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--primary-color);
-  min-width: 70px;
+  min-width: 60px;
 }
 
 .day-date {
   color: var(--text-light);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
 }
 
 .activity-count {
   background: linear-gradient(135deg, var(--primary-color), #22D3EE);
   color: white;
-  padding: 0.2rem 0.6rem;
+  padding: 0.15rem 0.5rem;
   border-radius: 12px;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   font-weight: 600;
 }
 
 .day-plan-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.6rem;
 }
 
 .checkbox-container {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   color: var(--text-dark);
   font-weight: 500;
 }
 
 .checkbox-container input[type="checkbox"] {
   cursor: pointer;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .expand-icon {
@@ -224,10 +224,10 @@
 }
 
 .activities-container {
-  padding: 1rem;
+  padding: 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.65rem;
   max-height: none;
   overflow: visible;
 }
@@ -244,11 +244,11 @@
 
 .suggestion-activity {
   display: flex;
-  gap: 1rem;
-  padding: 1rem;
+  gap: 0.65rem;
+  padding: 0.7rem 0.8rem;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 14px;
+  border-radius: 10px;
   transition: all 0.2s ease;
 }
 
@@ -262,17 +262,24 @@
   background: linear-gradient(135deg, rgba(239, 246, 255, 0.85) 0%, rgba(224, 231, 255, 0.6) 100%);
 }
 
+.suggestion-activity.selected .activity-location,
+.suggestion-activity.selected .activity-notes,
+.suggestion-activity.selected .activity-cost {
+  border-color: rgba(37, 99, 235, 0.5);
+  background: rgba(37, 99, 235, 0.08);
+}
+
 .activity-checkbox {
   display: flex;
   align-items: flex-start;
   cursor: pointer;
-  padding-top: 0.25rem;
+  padding-top: 0.1rem;
 }
 
 .activity-checkbox input[type="checkbox"] {
   cursor: pointer;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   margin: 0;
 }
 
@@ -280,59 +287,74 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 .activity-header-info {
   display: flex;
-  gap: 1rem;
+  gap: 0.6rem;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .time {
   font-weight: 600;
   color: var(--text-dark);
-  font-size: 0.95rem;
-  min-width: 120px;
+  font-size: 0.86rem;
+  min-width: 102px;
 }
 
 .category {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white;
-  padding: 0.25rem 0.75rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 16px;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 600;
 }
 
 .activity-title {
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 600;
   color: var(--text-dark);
-  margin: 0.25rem 0 0 0;
+  margin: 0;
+  flex: 1;
+  min-width: 170px;
+}
+
+.activity-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.45rem;
 }
 
 .activity-location {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
+  gap: 0.35rem;
+  font-size: 0.78rem;
   color: var(--text-light);
+  padding: 0.12rem 0.42rem;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
 }
 
 .location-icon {
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .activity-notes {
   display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  font-size: 0.85rem;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
   color: var(--text-light);
-  padding: 0.5rem;
-  background: var(--bg-light);
-  border-radius: 4px;
+  padding: 0.12rem 0.42rem;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
 }
 
 .notes-icon {
@@ -341,33 +363,31 @@
 
 .activity-cost {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.95rem;
-  margin-top: 0.25rem;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  padding: 0.12rem 0.42rem;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
 }
 
 .cost-label {
   color: var(--text-light);
-  font-size: 0.85rem;
-}
-
-.cost-values {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.1px;
 }
 
 .cost-value-local {
   font-weight: 700;
   color: var(--secondary-color);
-  font-size: 1.05rem;
+  font-size: 0.84rem;
 }
 
 .cost-value-twd {
   font-weight: 600;
   color: var(--text-light);
-  font-size: 0.9rem;
+  font-size: 0.76rem;
 }
 
 .suggestions-footer {
@@ -697,12 +717,6 @@
 
   .total-cost-twd {
     font-size: 0.95rem;
-  }
-    font-size: 0.875rem;
-  }
-
-  .total-cost {
-    font-size: 1.25rem;
   }
 
   .btn {

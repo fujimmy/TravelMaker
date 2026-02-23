@@ -186,3 +186,12 @@ export function formatCostWithExchangeRate(cost, localCurrency, exchangeRate) {
     rate: exchangeRate
   }
 }
+
+export function getAmountDisplay(cost, localCurrency, exchangeRate) {
+  const formatted = formatCostWithExchangeRate(cost, localCurrency, exchangeRate)
+  return {
+    local: formatted.local,
+    twd: formatted.twd,
+    showTwd: localCurrency?.code !== 'TWD'
+  }
+}

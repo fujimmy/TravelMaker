@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import TripInitForm from './components/TripInitForm'
 import TripItinerary from './components/TripItinerary'
 import TripList from './components/TripList'
+import CacheDebugger from './components/CacheDebugger'
 import { loadTrips, saveTrips } from './utils/localStorage'
 import './App.css'
 
@@ -67,6 +68,8 @@ function App() {
 
       <main className="app-main">
         <div className="container">
+          <CacheDebugger />
+          
           {view === 'list' && (
             <TripList
               trips={trips}

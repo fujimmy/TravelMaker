@@ -6,7 +6,18 @@ import AIItinerarySuggestions from './AIItinerarySuggestions'
 import CachedSuggestions from './CachedSuggestions'
 import { generateItineraryWithAI, getCachedItineraries } from '../utils/geminiApi'
 import { saveLocationImage, loadLocationImage } from '../utils/localStorage'
-import { getLocalCurrency, getExchangeRate, getCurrencyInfo } from '../utils/currencyUtils'
+import { getLocalCurrency, getExchangeRate, getCurrencyInfo, getAmountDisplay } from '../utils/currencyUtils'
+import {
+  getDistanceKey,
+  removeDistanceEntriesByDate,
+  calculateDistanceKm,
+  formatDistance,
+  fetchCoordinates,
+  getLocationEmoji,
+  getTotalCost,
+  getTotalCostByDate,
+  getCategoryBreakdown
+} from '../utils/itineraryUtils'
 import './TripItinerary.css'
 
 function TripItinerary({ trip, onUpdate, onBack }) {
@@ -25,7 +36,9 @@ function TripItinerary({ trip, onUpdate, onBack }) {
   const [locationImage, setLocationImage] = useState(null)
   const [localCurrency, setLocalCurrency] = useState({ code: 'TWD', symbol: 'NT$', name: '台幣' })
   const [exchangeRate, setExchangeRate] = useState(1)
+  const [distanceMap, setDistanceMap] = useState({})
   const fileInputRef = useRef(null)
+  const locationCoordsCacheRef = useRef(new Map())
 
   const createActivityId = () => `act_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 
@@ -106,6 +119,80 @@ function TripItinerary({ trip, onUpdate, onBack }) {
     return trip.itinerary[dateStr] || []
   }
 
+  const currentActivities = getActivitiesForDate(currentDate)
+
+  const clearDistanceCacheForDate = (dateStr) => {
+    setDistanceMap(prev => removeDistanceEntriesByDate(prev, dateStr))
+  }
+
+  const renderAmountDisplay = (amount) => {
+    const amountDisplay = getAmountDisplay(amount, localCurrency, exchangeRate)
+    return (
+      <>
+        <span className="amount-primary">{amountDisplay.local}</span>
+        {amountDisplay.showTwd && (
+          <>
+            <span className="amount-divider"> / </span>
+            <span className="amount-secondary">{amountDisplay.twd}</span>
+          </>
+        )}
+      </>
+    )
+  }
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const calculateCurrentDayDistances = async () => {
+      if (!currentActivities || currentActivities.length < 2) return
+
+      clearDistanceCacheForDate(currentDateStr)
+
+      const nextDistances = {}
+
+      for (let index = 0; index < currentActivities.length - 1; index += 1) {
+        const fromActivity = currentActivities[index]
+        const toActivity = currentActivities[index + 1]
+        const key = getDistanceKey(currentDateStr, index)
+        const fromLocation = fromActivity?.location?.trim()
+        const toLocation = toActivity?.location?.trim()
+
+        if (!fromLocation || !toLocation) {
+          nextDistances[key] = '距離資訊不足'
+          continue
+        }
+
+        if (fromLocation === toLocation) {
+          nextDistances[key] = '同地點（0 公里）'
+          continue
+        }
+
+        const [fromCoord, toCoord] = await Promise.all([
+          fetchCoordinates(fromLocation, locationCoordsCacheRef.current, '/api/nominatim', trip.location),
+          fetchCoordinates(toLocation, locationCoordsCacheRef.current, '/api/nominatim', trip.location)
+        ])
+
+        if (!fromCoord || !toCoord) {
+          nextDistances[key] = '無法計算距離'
+          continue
+        }
+
+        const distanceKm = calculateDistanceKm(fromCoord, toCoord)
+        nextDistances[key] = formatDistance(distanceKm)
+      }
+
+      if (!isCancelled) {
+        setDistanceMap(prev => ({ ...prev, ...nextDistances }))
+      }
+    }
+
+    calculateCurrentDayDistances()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [currentActivities, currentDateStr])
+
   const handleAddActivity = (date) => {
     setSelectedDate(format(date, 'yyyy-MM-dd'))
     setEditingActivity(null)
@@ -126,17 +213,19 @@ function TripItinerary({ trip, onUpdate, onBack }) {
       id: activityData.id || editingActivity?.id || createActivityId()
     }
     
-    if (!updatedItinerary[selectedDate]) {
-      updatedItinerary[selectedDate] = []
-    }
+    const dateActivities = [...(updatedItinerary[selectedDate] || [])]
 
     if (editingActivity !== null) {
       // Edit existing activity
-      updatedItinerary[selectedDate][editingActivity.index] = activityWithId
+      dateActivities[editingActivity.index] = activityWithId
     } else {
       // Add new activity
-      updatedItinerary[selectedDate].push(activityWithId)
+      dateActivities.push(activityWithId)
     }
+
+    updatedItinerary[selectedDate] = dateActivities
+
+    clearDistanceCacheForDate(selectedDate)
 
     onUpdate({ ...trip, itinerary: updatedItinerary })
     setShowActivityForm(false)
@@ -154,6 +243,7 @@ function TripItinerary({ trip, onUpdate, onBack }) {
       delete updatedItinerary[dateStr]
     }
 
+    clearDistanceCacheForDate(dateStr)
     onUpdate({ ...trip, itinerary: updatedItinerary })
   }
 
@@ -185,40 +275,13 @@ function TripItinerary({ trip, onUpdate, onBack }) {
     const updatedItinerary = { ...trip.itinerary }
     updatedItinerary[dateStr] = activities
 
+    clearDistanceCacheForDate(dateStr)
     onUpdate({ ...trip, itinerary: updatedItinerary })
   }
 
-  const getTotalCostForDate = (date) => {
-    const activities = getActivitiesForDate(date)
-    return activities.reduce((sum, activity) => sum + (parseFloat(activity.cost) || 0), 0)
-  }
-
-  const getTotalCost = () => {
-    let total = 0
-    Object.values(trip.itinerary).forEach(activities => {
-      activities.forEach(activity => {
-        total += parseFloat(activity.cost) || 0
-      })
-    })
-    return total
-  }
-
-  const getCategoryBreakdown = () => {
-    const breakdown = {}
-    Object.values(trip.itinerary).forEach(activities => {
-      activities.forEach(activity => {
-        const category = activity.category || '其他'
-        const cost = parseFloat(activity.cost) || 0
-        if (!breakdown[category]) {
-          breakdown[category] = 0
-        }
-        breakdown[category] += cost
-      })
-    })
-    return breakdown
-  }
-
-  const categoryBreakdown = getCategoryBreakdown()
+  const categoryBreakdown = getCategoryBreakdown(trip.itinerary)
+  const totalCost = getTotalCost(trip.itinerary)
+  const currentDayTotalCost = getTotalCostByDate(trip.itinerary, currentDateStr)
 
   const handleGenerateAISuggestions = async () => {
     try {
@@ -332,47 +395,6 @@ function TripItinerary({ trip, onUpdate, onBack }) {
     setAISuggestions([])
   }
 
-  const getLocationEmoji = (location) => {
-    if (!location) return '📍'
-    
-    const loc = location.toLowerCase()
-    
-    // 使用簡單的關鍵字匹配，而不是維護龐大的映射表
-    // 國家標誌
-    if (loc.includes('日本') || loc.includes('japan')) return '🇯🇵'
-    if (loc.includes('韓') || loc.includes('korea')) return '🇰🇷'
-    if (loc.includes('泰') || loc.includes('thailand')) return '🇹🇭'
-    if (loc.includes('台灣') || loc.includes('taiwan')) return '🇹🇼'
-    if (loc.includes('香港') || loc.includes('hong kong')) return '🇭🇰'
-    if (loc.includes('新加坡') || loc.includes('singapore')) return '🇸🇬'
-    if (loc.includes('美國') || loc.includes('usa') || loc.includes('america')) return '🇺🇸'
-    if (loc.includes('法') || loc.includes('france')) return '🇫🇷'
-    if (loc.includes('德') || loc.includes('germany')) return '🇩🇪'
-    if (loc.includes('義') || loc.includes('italy')) return '🇮🇹'
-    if (loc.includes('西班牙') || loc.includes('spain')) return '🇪🇸'
-    if (loc.includes('英') || loc.includes('uk') || loc.includes('britain')) return '🇬🇧'
-    if (loc.includes('荷蘭') || loc.includes('netherlands')) return '🇳🇱'
-    if (loc.includes('瑞士') || loc.includes('switzerland')) return '🇨🇭'
-    if (loc.includes('澳') || loc.includes('australia')) return '🇦🇺'
-    if (loc.includes('加拿大') || loc.includes('canada')) return '🇨🇦'
-    
-    // 知名城市
-    if (loc.includes('東京') || loc.includes('tokyo')) return '🗼'
-    if (loc.includes('巴黎') || loc.includes('paris')) return '🗼'
-    if (loc.includes('倫敦') || loc.includes('london')) return '🏰'
-    if (loc.includes('紐約') || loc.includes('new york')) return '🗽'
-    if (loc.includes('阿姆斯特丹') || loc.includes('amsterdam')) return '🌷'
-    if (loc.includes('羅馬') || loc.includes('rome')) return '🏛️'
-    if (loc.includes('威尼斯') || loc.includes('venice')) return '🚤'
-    if (loc.includes('雪梨') || loc.includes('sydney')) return '🌉'
-    if (loc.includes('杜拜') || loc.includes('dubai')) return '🏗️'
-    if (loc.includes('首爾') || loc.includes('seoul')) return '🌆'
-    if (loc.includes('曼谷') || loc.includes('bangkok')) return '🕌'
-    
-    // 預設
-    return '📍'
-  }
-
   const handleFileSelect = (event) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -472,15 +494,7 @@ function TripItinerary({ trip, onUpdate, onBack }) {
           <div className="summary-item">
             <span className="summary-label">總預算</span>
             <span className="summary-value">
-              {localCurrency.code !== 'TWD' ? (
-                <>
-                  <span className="amount-primary">{localCurrency.symbol}{getTotalCost().toLocaleString()}</span>
-                  <span className="amount-divider"> / </span>
-                  <span className="amount-secondary">NT$ {Math.round(getTotalCost() * exchangeRate).toLocaleString()}</span>
-                </>
-              ) : (
-                <span className="amount-primary">{localCurrency.symbol}{getTotalCost().toLocaleString()}</span>
-              )}
+              {renderAmountDisplay(totalCost)}
             </span>
           </div>
         </div>
@@ -493,15 +507,7 @@ function TripItinerary({ trip, onUpdate, onBack }) {
             <div key={category} className="breakdown-card">
               <div className="card-category">{category}</div>
               <div className="card-cost">
-                {localCurrency.code !== 'TWD' ? (
-                  <>
-                    <span className="amount-primary">{localCurrency.symbol}{cost.toLocaleString()}</span>
-                    <span className="amount-divider"> / </span>
-                    <span className="amount-secondary">NT$ {Math.round(cost * exchangeRate).toLocaleString()}</span>
-                  </>
-                ) : (
-                  <span className="amount-primary">{localCurrency.symbol}{cost.toLocaleString()}</span>
-                )}
+                {renderAmountDisplay(cost)}
               </div>
             </div>
           ))}
@@ -581,15 +587,7 @@ function TripItinerary({ trip, onUpdate, onBack }) {
               <h3>Day {currentDayIndex + 1}</h3>
               <span className="day-date">{format(currentDate, 'yyyy/MM/dd (EEEE)')}</span>
               <span className="day-cost-header">
-                💰 {localCurrency.code !== 'TWD' ? (
-                  <>
-                    <span className="amount-primary">{localCurrency.symbol}{getTotalCostForDate(currentDate).toLocaleString()}</span>
-                    <span className="amount-divider"> / </span>
-                    <span className="amount-secondary">NT$ {Math.round(getTotalCostForDate(currentDate) * exchangeRate).toLocaleString()}</span>
-                  </>
-                ) : (
-                  <span className="amount-primary">{localCurrency.symbol}{getTotalCostForDate(currentDate).toLocaleString()}</span>
-                )}
+                💰 {renderAmountDisplay(currentDayTotalCost)}
               </span>
             </div>
             <button 
@@ -608,100 +606,108 @@ function TripItinerary({ trip, onUpdate, onBack }) {
                   ref={provided.innerRef}
                   className={`activities-list ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
                 >
-                  {getActivitiesForDate(currentDate).length === 0 ? (
+                  {currentActivities.length === 0 ? (
                     <div className="empty-activities">
                       <p>尚無活動，點擊上方按鈕新增</p>
                     </div>
                   ) : (
-                    getActivitiesForDate(currentDate).map((activity, activityIndex) => (
-                      <Draggable
-                        key={activity.id || `${currentDateStr}-${activityIndex}`}
-                        draggableId={activity.id || `${currentDateStr}-${activityIndex}`}
-                        index={activityIndex}
-                      >
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className={`activity-card ${snapshot.isDragging ? 'dragging' : ''}`}
+                    currentActivities.map((activity, activityIndex) => {
+                      const distanceKey = getDistanceKey(currentDateStr, activityIndex)
+                      const distanceToNext = distanceMap[distanceKey]
+
+                      return (
+                        <div key={activity.id || `${currentDateStr}-${activityIndex}`} className="activity-segment">
+                          <Draggable
+                            draggableId={activity.id || `${currentDateStr}-${activityIndex}`}
+                            index={activityIndex}
                           >
-                            <div className="activity-header">
-                              <div className="activity-time">
-                                <span className="time-icon">🕐</span>
-                                <span>{activity.startTime} - {activity.endTime}</span>
-                              </div>
-                              <div className="activity-header-right">
-                                <div className="activity-category">
-                                  {activity.category}
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={`activity-card ${snapshot.isDragging ? 'dragging' : ''}`}
+                              >
+                                <div className="activity-header">
+                                  <div className="activity-time">
+                                    <span className="time-icon">🕐</span>
+                                    <span>{activity.startTime} - {activity.endTime}</span>
+                                  </div>
+                                  <div className="activity-header-right">
+                                    <div className="activity-category">
+                                      {activity.category}
+                                    </div>
+                                    {activity.location && (
+                                      <a 
+                                        href={`https://www.google.com/maps/search/${encodeURIComponent(activity.location)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="maps-link-small"
+                                        title="在 Google Maps 中查看"
+                                      >
+                                        🗺️
+                                      </a>
+                                    )}
+                                  </div>
                                 </div>
-                                {activity.location && (
-                                  <a 
-                                    href={`https://www.google.com/maps/search/${encodeURIComponent(activity.location)}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="maps-link-small"
-                                    title="在 Google Maps 中查看"
+
+                                <div className="activity-body">
+                                  {activity.location && (
+                                    <div className="activity-location">
+                                      <span className="location-icon">📍</span>
+                                      <span>{activity.location}</span>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="activity-main-content">
+                                    <span className="itinerary-pin-icon">📌</span>
+                                    <div className="activity-content">
+                                      {activity.content}
+                                    </div>
+                                  </div>
+
+                                  {activity.notes && (
+                                    <div className="activity-notes">
+                                      <span className="notes-icon">📝</span>
+                                      <span>{activity.notes}</span>
+                                    </div>
+                                  )}
+
+                                  <div className="activity-cost">
+                                    <span className="cost-label">費用：</span>
+                                    <span className="cost-value">{renderAmountDisplay(parseFloat(activity.cost || 0))}</span>
+                                  </div>
+                                </div>
+
+                                <div className="activity-actions">
+                                  <button
+                                    className="btn-icon"
+                                    onClick={() => handleEditActivity(currentDate, activityIndex)}
+                                    title="編輯"
                                   >
-                                    🗺️
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="activity-body">
-                              {activity.location && (
-                                <div className="activity-location">
-                                  <span className="location-icon">📍</span>
-                                  <span>{activity.location}</span>
+                                    ✏️
+                                  </button>
+                                  <button
+                                    className="btn-icon"
+                                    onClick={() => handleDeleteActivity(currentDate, activityIndex)}
+                                    title="刪除"
+                                  >
+                                    🗑️
+                                  </button>
                                 </div>
-                              )}
-                              
-                              <div className="activity-content">
-                                {activity.content}
                               </div>
+                            )}
+                          </Draggable>
 
-                              {activity.notes && (
-                                <div className="activity-notes">
-                                  <span className="notes-icon">📝</span>
-                                  <span>{activity.notes}</span>
-                                </div>
-                              )}
-
-                              <div className="activity-cost">
-                                <span className="cost-label">費用：</span>
-                                {localCurrency.code !== 'TWD' ? (
-                                  <span className="cost-value">
-                                    <span className="amount-primary">{localCurrency.symbol}{parseFloat(activity.cost || 0).toLocaleString()}</span>
-                                    <span className="amount-divider"> / </span>
-                                    <span className="amount-secondary">NT$ {Math.round(parseFloat(activity.cost || 0) * exchangeRate).toLocaleString()}</span>
-                                  </span>
-                                ) : (
-                                  <span className="cost-value">{localCurrency.symbol}{parseFloat(activity.cost || 0).toLocaleString()}</span>
-                                )}
-                              </div>
+                          {activityIndex < currentActivities.length - 1 && (
+                            <div className="activity-distance">
+                              <span className="distance-icon">📏</span>
+                              <span>{distanceToNext || '計算距離中...'}</span>
                             </div>
-
-                            <div className="activity-actions">
-                              <button
-                                className="btn-icon"
-                                onClick={() => handleEditActivity(currentDate, activityIndex)}
-                                title="編輯"
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                className="btn-icon"
-                                onClick={() => handleDeleteActivity(currentDate, activityIndex)}
-                                title="刪除"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))
+                          )}
+                        </div>
+                      )
+                    })
                   )}
                   {provided.placeholder}
                 </div>

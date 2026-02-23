@@ -62,7 +62,10 @@ function ActivityForm({ activity, onSave, onCancel }) {
   }
 
   const handleSuggestionClick = (prediction) => {
-    const mainText = prediction.main_text || prediction.description
+    const mainText =
+      prediction.structured_formatting?.main_text ||
+      prediction.main_text ||
+      prediction.description
     let cleanedLocation = mainText
 
     // Remove postal codes
@@ -156,13 +159,17 @@ function ActivityForm({ activity, onSave, onCancel }) {
               <div className="suggestions-dropdown">
                 {filteredSuggestions.map((suggestion, idx) => (
                   <div
-                    key={idx}
+                    key={suggestion.place_id || idx}
                     className="suggestion-item"
                     onClick={() => handleSuggestionClick(suggestion)}
                   >
-                    <span className="main-text">{suggestion.main_text}</span>
-                    {suggestion.secondary_text && (
-                      <span className="secondary-text">{suggestion.secondary_text}</span>
+                    <span className="main-text">
+                      {suggestion.structured_formatting?.main_text || suggestion.main_text || suggestion.description}
+                    </span>
+                    {(suggestion.structured_formatting?.secondary_text || suggestion.secondary_text) && (
+                      <span className="secondary-text">
+                        {suggestion.structured_formatting?.secondary_text || suggestion.secondary_text}
+                      </span>
                     )}
                   </div>
                 ))}

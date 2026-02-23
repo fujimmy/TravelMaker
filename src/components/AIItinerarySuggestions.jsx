@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { getLocalCurrency, getExchangeRate, formatCostWithExchangeRate, getCurrencyInfo } from '../utils/currencyUtils'
+import { getLocalCurrency, getExchangeRate, getCurrencyInfo, getAmountDisplay } from '../utils/currencyUtils'
 import './AIItinerarySuggestions.css'
 
 function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = false }) {
@@ -137,6 +137,8 @@ function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = 
     return { totalLocal, totalTWD }
   }
 
+  const totalCost = getTotalCost()
+
   return (
     <div className="ai-suggestions-overlay" onClick={onCancel}>
       <div className="ai-suggestions-content" onClick={(e) => e.stopPropagation()}>
@@ -221,26 +223,26 @@ function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = 
                                   <div className="activity-header-info">
                                     <span className="time">{activity.startTime} - {activity.endTime}</span>
                                     <span className="category">{activity.category}</span>
+                                    <h4 className="activity-title">{activity.content}</h4>
                                   </div>
-                                  <h4 className="activity-title">{activity.content}</h4>
-                                  {activity.location && (
-                                    <div className="activity-location">
-                                      <span className="location-icon">📍</span>
-                                      <span>{activity.location}</span>
-                                    </div>
-                                  )}
-                                  {activity.notes && (
-                                    <div className="activity-notes">
-                                      <span className="notes-icon">📝</span>
-                                      <span>{activity.notes}</span>
-                                    </div>
-                                  )}
-                                  <div className="activity-cost">
-                                    <span className="cost-label">预估费用：</span>
-                                    <div className="cost-values">
-                                      <span className="cost-value-local">{localCurrency.symbol}{(activity.cost || 0).toLocaleString()}</span>
+                                  <div className="activity-meta">
+                                    {activity.location && (
+                                      <div className="activity-location">
+                                        <span className="location-icon">📍</span>
+                                        <span>{activity.location}</span>
+                                      </div>
+                                    )}
+                                    {activity.notes && (
+                                      <div className="activity-notes">
+                                        <span className="notes-icon">📝</span>
+                                        <span>{activity.notes}</span>
+                                      </div>
+                                    )}
+                                    <div className="activity-cost">
+                                      <span className="cost-label">费用</span>
+                                      <span className="cost-value-local">{getAmountDisplay(activity.cost || 0, localCurrency, exchangeRate).local}</span>
                                       {localCurrency.code !== 'TWD' && !rateLoading && (
-                                        <span className="cost-value-twd">≈ NT$ {Math.round((activity.cost || 0) * exchangeRate).toLocaleString()}</span>
+                                        <span className="cost-value-twd">≈ {getAmountDisplay(activity.cost || 0, localCurrency, exchangeRate).twd}</span>
                                       )}
                                     </div>
                                   </div>
@@ -265,9 +267,9 @@ function AIItinerarySuggestions({ suggestions, trip, onAdd, onCancel, loading = 
                   )}
                 </div>
                 <div className="total-costs">
-                  <span className="total-cost-local">{localCurrency.symbol}{getTotalCost().totalLocal.toLocaleString()}</span>
+                  <span className="total-cost-local">{getAmountDisplay(totalCost.totalLocal, localCurrency, exchangeRate).local}</span>
                   {localCurrency.code !== 'TWD' && !rateLoading && (
-                    <span className="total-cost-twd">≈ NT$ {getTotalCost().totalTWD.toLocaleString()}</span>
+                    <span className="total-cost-twd">≈ {getAmountDisplay(totalCost.totalLocal, localCurrency, exchangeRate).twd}</span>
                   )}
                 </div>
               </div>
